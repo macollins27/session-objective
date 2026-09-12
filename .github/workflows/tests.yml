@@ -1,0 +1,27 @@
+name: fixtures
+
+# The gate runs here, after the push — never in a commit or push hook. A commit is a
+# save and a push is a backup; neither is gated by tests.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"
+
+jobs:
+  fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Versions
+        run: bash --version | head -1; jq --version
+      - name: bash -n over every script
+        run: for f in scripts/*.sh scripts/lib/*.sh tests/*.sh; do bash -n "$f" || exit 1; done
+      - name: Red-first — every fixture must fail with its guard stubbed out
+        run: bash tests/run.sh --red-first
+      - name: Real — every fixture must pass against the real hooks
+        run: bash tests/run.sh
+      - name: Fail-closed guard census
+        run: bash scripts/check-shell-safety.sh "$PWD"
