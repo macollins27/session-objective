@@ -757,10 +757,13 @@
       "expect_contains": [
         "does not end",
         "Run the migration against the staging database."
+      ],
+      "expect_absent": [
+        "could not be read or parsed"
       ]
     },
     {
-      "id": "R3-allow-when-budget-exhausted",
+      "id": "R3-F14-allow-when-budget-exhausted",
       "script": "objective-stop-gate.sh",
       "file": [
         "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
@@ -809,7 +812,7 @@
       ]
     },
     {
-      "id": "R3-deny-zero-tool-calls-even-at-budget",
+      "id": "R3-F14-deny-zero-tool-calls-even-at-budget",
       "script": "objective-stop-gate.sh",
       "file": [
         "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
@@ -2230,6 +2233,52 @@
       ],
       "expect_file_contains": [
         "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ]
+    },
+    {
+      "id": "F7-short-ledger-is-not-truncated",
+      "script": "objective-ledger-append.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "second message"
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "build the thing",
+        "second message"
+      ],
+      "expect_absent": [
+        "truncated for injection",
+        "capped at 1,100 words"
       ]
     },
     {
