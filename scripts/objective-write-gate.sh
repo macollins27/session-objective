@@ -225,22 +225,18 @@ case "$TOOL" in
     ;;
   Bash)
     CMD="$(jq -r '.tool_input.command // empty' <<< "$SO_PAYLOAD")"
-    if grep -qF -- "$(so_home)" <<< "$CMD" || grep -qF -- "$HOMEDIR" <<< "$CMD"; then
-      # REPAIR, MEASURED 2026-09-12: this used to allow the plugin's own LEDGER
-      # WRITER by name, so an agent could run it and append a sentence the operator
-      # never said into the layer headed "hook-written, append-only". Append-only
-      # kept anything from disappearing, but putting words in his mouth is the same
-      # failure from the other side. That script is gone; no writer is allowed by
-      # name any more, from any path.
-      #
-      # The single remaining carve-out is objective-show.sh, which PRINTS and has no
-      # write path at all, and only when the command is that script alone: no pipe,
-      # no redirection, no chaining, no substitution, so nothing can ride along.
-      if grep -qE '^[[:space:]]*[^;&|<>$`()]*objective-show\.sh[[:space:]]+[^;&|<>$`()]*$' <<< "$CMD"; then
-        exit 0
-      fi
-      so_deny_pretooluse "session-objective: this Bash command names the objective home ($(so_home)) and is denied. The OPERATOR LEDGER layer is append-only and hook-written; the OBJECTIVE layer is changed only by $HOWTO. Command refused: $CMD"
-    fi
+    # THE WHOLE COMMAND, not a line of it. `grep` is line-based, and a Bash command is
+    # routinely several lines: a first line that looked harmless and a second line that
+    # wrote to the ledger slipped past a line-anchored test, and because this branch
+    # could ALLOW, it also slipped past the write-before-act lock. Both holes came from
+    # the same two things — a per-line match, and a name-based allowance — so both are
+    # gone. `case` matches the entire string, newlines included, and this branch can now
+    # only DENY or fall through to the lock. There is no allowance of any kind here: no
+    # script name, no path, no shape.
+    case "$CMD" in
+      *"$(so_home)"*|*"$HOMEDIR"*|*"$FILE"*|*"$RFILE"*)
+        so_deny_pretooluse "session-objective: this Bash command names the objective home ($(so_home)) and is denied — every character of the command was read, not just its first line. The OPERATOR LEDGER layer is append-only and hook-written: the only thing that ever appends to it is the operator typing a message. The OBJECTIVE layer is changed only by $HOWTO. To read this session's objective, use the Read tool on $FILE, which is permitted. Command refused: $CMD" ;;
+    esac
     RTGT=""
     ;;
   *) RTGT="" ;;

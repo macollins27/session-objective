@@ -72,12 +72,16 @@ SUPERSEDED <date> by ledger entry <K>: <old line>
 ```
 
 Any other removal is denied with the missing line named. The ledger itself is immutable: any
-`Write`, `Edit`, `apply_patch` or `Bash` that touches it is denied, and **no writer is allowed by
-name**, from any path. The plugin ships no script that can append to the ledger on the agent's
-behalf; the UserPromptSubmit hook is the only writer, and it writes only what you actually typed.
-The single Bash carve-out near the objective home is `objective-show.sh`, which prints and has no
-write path at all, and only as a bare command — a pipe, a redirection, a chain or a substitution
-anywhere in the line and it is denied with everything else.
+`Write`, `Edit`, `apply_patch` or `Bash` that touches it is denied. **Nothing is allowed by name** —
+not a script, not a path, not a shape. The plugin ships nothing an agent can invoke that writes to
+the ledger; the UserPromptSubmit hook is the only writer and it writes only what you actually typed.
+
+The Bash guard reads the **whole command string**, newlines included, and it can only refuse or
+stand aside — it never grants. That matters twice over: a line-based test let a two-line command
+hide a ledger append on its second line, and because the branch could grant, the same shape also
+walked past the write-before-act lock. While the objective is locked every Bash call is denied; when
+it is in sync, any Bash whose full text names the objective home is denied. To see the file, Read
+it — that call is permitted.
 
 ### Rule 3 — ACTIVE cannot end a turn  (`Stop`)
 
@@ -111,7 +115,8 @@ session keeps its id and therefore its file. A new session in the same folder st
 /objective     print this session's file
 ```
 
-That is the whole surface. There is no set, revise, decide or complete command, and deliberately so:
+It is implemented as a `Read` of this session's objective path, which Rule 1 already permits; there
+is no script to run and no shell involved. That is the whole surface. There is no set, revise, decide or complete command, and deliberately so:
 an agent-invocable way to add a ledger entry is an agent-invocable way to put words in your mouth.
 Your typed messages are the only input to the ledger — the hook appends every one of them verbatim —
 so when you answer a NEEDS-DECISION question you answer it by typing it, and that message becomes
@@ -176,7 +181,7 @@ Each is a fixture or a rule stated here; none is skipped.
 |---|---|---|
 | F1 | Rubber-stamp rewrite | The bound ledger entry must **advance**; a write whose binding does not advance is denied. An identical body under an advanced binding is allowed on purpose — semantic quality is not mechanically decidable. |
 | F2 | Fake `NEEDS-DECISION` to escape the gate | The question must appear in the final assistant message, and your next message resets STATUS to ACTIVE (the ledger hook rewrites the status line when it appends), so nothing can park in NEEDS-DECISION. |
-| F3 | Trivial `PROOF` (`true`, `:`, `exit 0`, a bare `echo`/`printf`, empty) | Denylisted, at the write and again at the stop, denied with the condition named. A proof is trivial only when the *whole* command cannot fail — every `\|`, `&&`, `\|\|` or `;` segment is itself one of those atoms — so `true \|\| true` is refused while `printf 'shipped' \| cmp -s - done.txt` is a proof. An earlier version anchored `^printf …$` and refused that genuine proof; a guard that refuses the real proof trains the agent to write a weaker one. |
+| F3 | Trivial `PROOF` (`true`, `:`, `exit 0`, a bare `echo`/`printf`, empty) | Denylisted, at the write and again at the stop, denied with the condition named. A proof is trivial only when the *whole* command cannot fail: every `\|`, `&&`, `\|\|` or `;` segment's **outer** command is one of those atoms. Substitutions are erased before classifying, because a simple command's exit status is its own — `echo $(false)` exits 0 every time and is refused, while `test "$(cat done.txt)" = shipped` and `printf 'shipped' \| cmp -s - done.txt` are proofs. Two earlier versions got this wrong in opposite directions: one anchored `^printf …$` and refused the genuine pipeline; the next treated any substitution as evidence of real work and let `echo $(false)` through to a passing COMPLETE. |
 | F4 | Destructive `PROOF` re-run by the Stop hook | The hook refuses to re-run anything matching the destructive denylist (`rm`, `git push`, `git reset`, `docker`, `curl -X`, `sudo`, `>`-redirects, …) and denies COMPLETE naming it. Proofs run with a 60-second bound, in the session cwd, never elevated. |
 | F5 | Deadlock: writing the objective through a Bash heredoc while Bash is locked | The injected instruction names the exact tool and path; Bash stays denied and the deny text repeats the tool and the path. |
 | F6 | Plan mode | The harness itself blocks `Write`, so a lock would wedge the session: when `permission_mode` is `plan` the hooks **inject only**. |

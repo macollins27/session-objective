@@ -12,8 +12,9 @@
 #   SESSION_OBJECTIVE=off         -> the caller exits 0 with one visible line (F11).
 #
 # Every helper here is pure: it reads files and the cached payload, and writes
-# nothing. The only writers in this repo are the ledger-append hook, the subagent
-# seed hook and the /objective decide script.
+# nothing. The only writers in this repo are the ledger-append hook and the subagent
+# seed hook. Nothing an agent can invoke writes to the ledger: the operator typing a
+# message is the only thing that ever appends an entry.
 
 # ---------------------------------------------------------------------------
 # FAIL-CLOSED INPUT VALIDATION
@@ -258,21 +259,36 @@ so_realpath() { # <path> [base-dir]
 # PROOF denylists
 # ---------------------------------------------------------------------------
 # F3 — a proof that cannot fail proves nothing. Trivial means the WHOLE command
-# cannot fail: every composition segment is a bare `true`, `:`, `exit 0`, or an
-# echo/printf. A pipeline, a command substitution or a real command anywhere in it
-# makes the exit code depend on something, so it is a proof.
+# cannot fail: every composition segment's OUTER command is a bare `true`, `:`,
+# `exit 0`, `echo` or `printf`. A pipeline or a real command anywhere in it makes the
+# exit code depend on something, so it is a proof.
 #
-# MEASURED OVER-BLOCK, NOW FIXED (2026-09-12): the first version anchored `^echo .*$`
-# and `^printf .*$`, which refused the genuine proof
-#     printf 'shipped' | cmp -s - done.txt
-# because the command STARTS with printf. A guard that refuses the real proof trains
-# the agent to write a weaker one, which is the defect it exists to prevent.
+# TWO MEASURED DEFECTS, BOTH FIXED (2026-09-12):
+#   * The first version anchored `^echo .*$` / `^printf .*$`, so it refused the genuine
+#     proof `printf 'shipped' | cmp -s - done.txt` for starting with printf. A guard
+#     that refuses the real proof trains the agent to write a weaker one.
+#   * The second version treated a command substitution as evidence of real work and
+#     returned "proof" for anything containing one — so `echo $(false)` passed, and the
+#     Stop gate accepted STATUS COMPLETE on it. A simple command's exit status is its
+#     own; the status inside `$(...)` does not propagate, so `echo $(false)` exits 0
+#     every time. Substitutions are therefore ERASED before classifying, and what is
+#     judged is the outer command that actually sets the exit code.
+so_strip_substitutions() { # <command> -> the command with every $(...), `...`, <(...) replaced by X
+  local c="$1" prev=""
+  local i=0
+  while [ "$c" != "$prev" ] && [ "$i" -lt 20 ]; do
+    prev="$c"
+    c="$(printf '%s' "$c" | sed -E 's/[$]\([^()]*\)/X/g; s/<\([^()]*\)/X/g; s/`[^`]*`/X/g')"
+    i=$((i + 1))
+  done
+  printf '%s' "$c"
+}
+
 so_proof_trivial() { # <command>
   local c seg
   c="$(printf '%s' "$1" | so_trim)"
   [ -z "$c" ] && return 0
-  # a command or process substitution means the exit code depends on real work
-  grep -qE '[$]\(|`|<\(' <<< "$c" && return 1
+  c="$(so_strip_substitutions "$c")"
   while IFS= read -r seg; do
     seg="$(printf '%s' "$seg" | sed -E 's/[<>]+[[:space:]]*[^[:space:]]*//g' | so_trim)"
     [ -z "$seg" ] && continue
@@ -316,8 +332,9 @@ so_run_bounded() { # <seconds> <command> <cwd>
 }
 
 # Append one operator message to the ledger VERBATIM and reset STATUS to ACTIVE (F2).
-# The single writer for both entry points: the UserPromptSubmit hook and
-# /objective decide. Returns non-zero if the file could not be rewritten.
+# Called from exactly one place, the UserPromptSubmit hook, and deliberately: an
+# agent-invocable way to add a ledger entry is an agent-invocable way to put words in
+# the operator's mouth. Returns non-zero if the file could not be rewritten.
 so_append_entry() { # <file> <text>
   local file="$1" text="$2" tmp
   [ -n "$(so_objective_heading "$file")" ] || return 1

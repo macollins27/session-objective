@@ -91,13 +91,18 @@ run_one() { # <fixture-json> <inverted?>
   file="$home/sessions/$key/objective.md"
   transcript="$tmp/transcript.jsonl"
 
+  # Placeholders are substituted in the seeded FILES too, not only in the payload —
+  # without this a fixture whose objective names @CWD@ writes the literal token, the
+  # proof command points at a path that cannot exist, and the fixture passes for the
+  # wrong reason.
+  sub() { sed -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g" -e "s#@CWD@#$cwd#g" -e "s#@TRANSCRIPT@#$transcript#g"; }
   if jq -e 'has("file")' >/dev/null <<< "$fx"; then
     mkdir -p "$(dirname "$file")"
-    jq -r '.file[]' <<< "$fx" > "$file"
+    jq -r '.file[]' <<< "$fx" | sub > "$file"
   fi
   if jq -e 'has("parent_file")' >/dev/null <<< "$fx"; then
     mkdir -p "$home/sessions/$sid"
-    jq -r '.parent_file[]' <<< "$fx" > "$home/sessions/$sid/objective.md"
+    jq -r '.parent_file[]' <<< "$fx" | sub > "$home/sessions/$sid/objective.md"
   fi
   if jq -e 'has("transcript")' >/dev/null <<< "$fx"; then
     jq -r '.transcript[]' <<< "$fx" > "$transcript"
