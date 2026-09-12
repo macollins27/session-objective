@@ -1,24 +1,21 @@
 ---
-description: Print this session's objective file, or record the operator's answer to a NEEDS-DECISION question
-argument-hint: [decide "<answer>"]
-allowed-tools: Bash
+description: Print this session's objective file
+allowed-tools: Read, Bash
 ---
 
-The objective file for this session is named in the `SESSION OBJECTIVE` block in your
-context (the line beginning `file:`). Use that exact path below as `<FILE>`.
+Show the operator this session's objective file, verbatim. Do not summarise it, do not
+comment on it, and do not change it.
 
-Arguments given: `$ARGUMENTS`
+The path is named in the `SESSION OBJECTIVE` block in your context, on the line
+beginning `file:`. Read that file and print it — a Read of this session's own objective
+file is always permitted, even while the write-before-act lock is engaged.
 
-- If the arguments are empty, run:
-  `${CLAUDE_PLUGIN_ROOT}/scripts/objective-show.sh <FILE>`
-  and show the operator the output as-is. Do not summarise it and do not comment on it.
+Where no Read tool exists (Codex), run instead:
+`${CLAUDE_PLUGIN_ROOT}/scripts/objective-show.sh <the path from the SESSION OBJECTIVE block>`
+That script only prints; it is the one shell command the guard permits near the
+objective home, and only on its own with no pipe, redirection or chaining.
 
-- If the arguments begin with `decide`, take everything after the word `decide`
-  (stripping one pair of surrounding quotes) as the operator's answer and run:
-  `${CLAUDE_PLUGIN_ROOT}/scripts/objective-decide.sh <FILE> "<answer>"`
-  That appends the answer to the append-only ledger exactly as typing it would, and
-  resets STATUS to ACTIVE. Then rewrite the OBJECTIVE layer bound to the new entry and
-  carry on with the work; the answer is a decision, not a new task.
-
-There is no set, revise, or complete command. The operator's words are the only input
-and the mechanism does the rest.
+There is no set, revise, decide or complete command. The operator's typed messages are
+the only input to the OPERATOR LEDGER — the hook appends every one of them verbatim —
+and the mechanism does the rest. If the operator answers a NEEDS-DECISION question, he
+answers it by typing it; that message becomes the next ledger entry on its own.

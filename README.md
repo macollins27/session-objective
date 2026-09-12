@@ -46,7 +46,17 @@ The OBJECTIVE layer is capped at 1,800 words. A larger write is refused.
 On every message you send, the hook appends it to the ledger verbatim, then injects the whole file
 with one instruction: rewrite the OBJECTIVE layer to reflect every ledger entry, then work. Until
 the OBJECTIVE layer's bound ledger entry equals the latest ledger entry, `PreToolUse` denies every
-tool call except a `Write` whose target is exactly this session's objective path.
+tool call except two, both on exactly this session's objective path (real-path resolved, so a
+symlink or a `..` cannot widen them): a **`Read`** of it and a **`Write`** to it. On Codex, where
+there is no `Write` tool, the second is an `apply_patch` carrying one file operation on that path.
+
+The `Read` is part of the exception, not a convenience. Claude Code refuses to `Write` a file it has
+not read this session, and the objective file lives outside the project by design, so in `default`
+and `acceptEdits` both calls also need the operator's permission. The gate therefore returns an
+explicit `permissionDecision: "allow"` for those two calls — it does not merely stand aside — which
+is what clears the prompt. It grants nothing beyond the file the hook itself just injected. Without
+this the lock and the harness deadlock each other on message one, which is measured behaviour, not
+a hypothetical (four of four real runs in `default` and `acceptEdits`).
 
 On the first message of a session the file is created from an empty template and the instruction
 adds: ask at most one question, and only if the desired outcome is genuinely ambiguous; otherwise
@@ -62,7 +72,12 @@ SUPERSEDED <date> by ledger entry <K>: <old line>
 ```
 
 Any other removal is denied with the missing line named. The ledger itself is immutable: any
-`Write`, `Edit` or `Bash` that touches it is denied.
+`Write`, `Edit`, `apply_patch` or `Bash` that touches it is denied, and **no writer is allowed by
+name**, from any path. The plugin ships no script that can append to the ledger on the agent's
+behalf; the UserPromptSubmit hook is the only writer, and it writes only what you actually typed.
+The single Bash carve-out near the objective home is `objective-show.sh`, which prints and has no
+write path at all, and only as a bare command — a pipe, a redirection, a chain or a substitution
+anywhere in the line and it is denied with everything else.
 
 ### Rule 3 — ACTIVE cannot end a turn  (`Stop`)
 
@@ -93,12 +108,14 @@ session keeps its id and therefore its file. A new session in the same folder st
 ## The operator surface
 
 ```
-/objective                    print this session's file
-/objective decide "<answer>"  append your answer to the ledger, exactly as typing it would
+/objective     print this session's file
 ```
 
-There is no set, revise or complete command. Your words are the only input and the mechanism does
-the rest.
+That is the whole surface. There is no set, revise, decide or complete command, and deliberately so:
+an agent-invocable way to add a ledger entry is an agent-invocable way to put words in your mouth.
+Your typed messages are the only input to the ledger — the hook appends every one of them verbatim —
+so when you answer a NEEDS-DECISION question you answer it by typing it, and that message becomes
+the next entry on its own.
 
 ---
 
@@ -159,7 +176,7 @@ Each is a fixture or a rule stated here; none is skipped.
 |---|---|---|
 | F1 | Rubber-stamp rewrite | The bound ledger entry must **advance**; a write whose binding does not advance is denied. An identical body under an advanced binding is allowed on purpose — semantic quality is not mechanically decidable. |
 | F2 | Fake `NEEDS-DECISION` to escape the gate | The question must appear in the final assistant message, and your next message resets STATUS to ACTIVE (the ledger hook rewrites the status line when it appends), so nothing can park in NEEDS-DECISION. |
-| F3 | Trivial `PROOF` (`true`, `:`, `exit 0`, a bare `echo`, empty) | Denylisted, at the write and again at the stop, denied with the condition named. |
+| F3 | Trivial `PROOF` (`true`, `:`, `exit 0`, a bare `echo`/`printf`, empty) | Denylisted, at the write and again at the stop, denied with the condition named. A proof is trivial only when the *whole* command cannot fail — every `\|`, `&&`, `\|\|` or `;` segment is itself one of those atoms — so `true \|\| true` is refused while `printf 'shipped' \| cmp -s - done.txt` is a proof. An earlier version anchored `^printf …$` and refused that genuine proof; a guard that refuses the real proof trains the agent to write a weaker one. |
 | F4 | Destructive `PROOF` re-run by the Stop hook | The hook refuses to re-run anything matching the destructive denylist (`rm`, `git push`, `git reset`, `docker`, `curl -X`, `sudo`, `>`-redirects, …) and denies COMPLETE naming it. Proofs run with a 60-second bound, in the session cwd, never elevated. |
 | F5 | Deadlock: writing the objective through a Bash heredoc while Bash is locked | The injected instruction names the exact tool and path; Bash stays denied and the deny text repeats the tool and the path. |
 | F6 | Plan mode | The harness itself blocks `Write`, so a lock would wedge the session: when `permission_mode` is `plan` the hooks **inject only**. |

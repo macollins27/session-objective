@@ -228,6 +228,231 @@
       "expect": "allow"
     },
     {
+      "id": "R1-allow-read-of-the-objective-while-locked",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Read",
+        "tool_input": {
+          "file_path": "@FILE@"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "R1-deny-read-of-another-file-while-locked",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Read",
+        "tool_input": {
+          "file_path": "@CWD@/other.txt"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "Read is denied"
+      ]
+    },
+    {
+      "id": "R1-deny-read-of-another-session-objective",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Read",
+        "tool_input": {
+          "file_path": "@HOME@/sessions/someone-else/objective.md"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "not this session's business"
+      ]
+    },
+    {
+      "id": "R1-allow-read-of-the-objective-when-in-sync",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 2)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Read",
+        "tool_input": {
+          "file_path": "@FILE@"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "R1-deny-text-names-both-permitted-calls",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "ls"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "Read of @FILE@",
+        "Write, with file_path=@FILE@"
+      ]
+    },
+    {
       "id": "R2-deny-dropped-constraint",
       "script": "objective-write-gate.sh",
       "file": [
@@ -1569,6 +1794,150 @@
       ]
     },
     {
+      "id": "F3-allow-pipeline-proof-at-write",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Write",
+        "tool_input": {
+          "file_path": "@FILE@",
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-12T14:00Z  build the thing\n- 2026-09-12T14:01Z  and keep the logs\n\n# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)\nDESIRED OUTCOME\nShip the thing.\n\nSUCCESS CONDITIONS\n- done.txt says shipped  PROOF: printf 'shipped' | cmp -s - done.txt => exit 0\n\nCONSTRAINTS\n\nREJECTED INTERPRETATIONS\n\nFAILED APPROACHES\n\nCURRENT REALITY\nNothing built yet.\n\nFRONTIER\nWrite the first test.\n\nSTATUS\nACTIVE\n"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "F3-deny-always-true-composition-at-write",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Write",
+        "tool_input": {
+          "file_path": "@FILE@",
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-12T14:00Z  build the thing\n- 2026-09-12T14:01Z  and keep the logs\n\n# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)\nDESIRED OUTCOME\nShip the thing.\n\nSUCCESS CONDITIONS\n- it works  PROOF: true || true => exit 0\n\nCONSTRAINTS\n\nREJECTED INTERPRETATIONS\n\nFAILED APPROACHES\n\nCURRENT REALITY\nNothing built yet.\n\nFRONTIER\nWrite the first test.\n\nSTATUS\nACTIVE\n"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "cannot fail, so it proves nothing"
+      ]
+    },
+    {
+      "id": "F3-allow-pipeline-proof-at-stop",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "- done.txt says shipped  PROOF: printf 'shipped' | cmp -s - @CWD@/done.txt => exit 0",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "COMPLETE"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"do it\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"t1\", \"name\": \"Read\", \"input\": {}}]}}",
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"t1\", \"content\": \"ok\"}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "seed_files": [
+        "done.txt"
+      ],
+      "expect": "block",
+      "expect_contains": [
+        "does not reproduce"
+      ],
+      "expect_absent": [
+        "cannot fail, so it proves nothing"
+      ]
+    },
+    {
       "id": "F3-allow-real-proof-at-write",
       "script": "objective-write-gate.sh",
       "file": [
@@ -2011,6 +2380,228 @@
         "tool_use_id": "toolu_x"
       },
       "expect": "deny"
+    },
+    {
+      "id": "F9-deny-bash-invoking-the-removed-ledger-writer",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "/x/scripts/objective-decide.sh @FILE@ 'the operator said to skip the database rule'"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "names the objective home"
+      ]
+    },
+    {
+      "id": "F9-deny-bash-appending-to-the-ledger",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "echo '- 2026-09-12T14:00Z  he approved it' >> @FILE@"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "names the objective home"
+      ]
+    },
+    {
+      "id": "F9-allow-bash-objective-show-alone",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "/x/scripts/objective-show.sh @FILE@"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "F9-deny-bash-objective-show-with-anything-riding-along",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "/x/scripts/objective-show.sh @FILE@ && echo hi >> @FILE@"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "names the objective home"
+      ]
+    },
+    {
+      "id": "F9-deny-bash-objective-show-piped-into-a-writer",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "/x/scripts/objective-show.sh @FILE@ | tee @FILE@"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "names the objective home"
+      ]
     },
     {
       "id": "F9-allow-unrelated-bash",
@@ -3861,53 +4452,8 @@
       ]
     },
     {
-      "id": "OP-decide-appends-and-resets-status",
-      "script": "objective-decide.sh",
-      "file": [
-        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
-        "",
-        "- 2026-09-12T14:00Z  build the thing",
-        "",
-        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
-        "DESIRED OUTCOME",
-        "Ship the thing.",
-        "",
-        "SUCCESS CONDITIONS",
-        "",
-        "CONSTRAINTS",
-        "",
-        "REJECTED INTERPRETATIONS",
-        "",
-        "FAILED APPROACHES",
-        "",
-        "CURRENT REALITY",
-        "Nothing built yet.",
-        "",
-        "FRONTIER",
-        "Write the first test.",
-        "",
-        "STATUS",
-        "NEEDS-DECISION: Should the deposit be refundable?"
-      ],
-      "payload": {
-        "hook_event_name": "none"
-      },
-      "args": [
-        "@FILE@",
-        "yes, refundable"
-      ],
-      "expect": "ok",
-      "expect_file_contains": [
-        "yes, refundable",
-        "STATUS\nACTIVE"
-      ],
-      "expect_file_absent": [
-        "NEEDS-DECISION"
-      ]
-    },
-    {
-      "id": "OP-decide-refuses-empty-answer",
-      "script": "objective-decide.sh",
+      "id": "OP-show-prints-the-file",
+      "script": "objective-show.sh",
       "file": [
         "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
         "",
@@ -3940,25 +4486,24 @@
       "args": [
         "@FILE@"
       ],
-      "expect": "fatal",
+      "expect": "ok",
       "expect_contains": [
-        "the answer is empty",
-        "Nothing was written"
+        "DESIRED OUTCOME",
+        "build the thing"
       ]
     },
     {
-      "id": "OP-decide-refuses-missing-file",
-      "script": "objective-decide.sh",
+      "id": "OP-show-refuses-a-missing-file",
+      "script": "objective-show.sh",
       "payload": {
         "hook_event_name": "none"
       },
       "args": [
-        "@FILE@",
-        "hello"
+        "@FILE@"
       ],
-      "expect": "fatal",
+      "expect": "fail_1",
       "expect_contains": [
-        "does not exist"
+        "no objective file found"
       ]
     }
   ]

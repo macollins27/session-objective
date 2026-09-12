@@ -56,8 +56,11 @@ RFILE="$(so_realpath "$FILE")"
 # lock would never release.
 if [ "$(so_runtime)" = "codex" ]; then
   HOWTO="apply_patch, carrying exactly one file operation, on exactly this path: $FILE (an Add File or an Update File hunk; no Move to, no Delete File, and no second file in the same patch)"
+  # Codex has no Read tool, so its permitted set is the patch alone.
+  PERMITTED="$HOWTO"
 else
   HOWTO="Write, with file_path=$FILE"
+  PERMITTED="Read of $FILE (allowed so the Write tool's read-before-write check can be satisfied), and Write, with file_path=$FILE"
 fi
 
 # ---------------------------------------------------------------------------
@@ -145,6 +148,27 @@ under_home() { # <resolved-path>
 }
 
 case "$TOOL" in
+  Read)
+    # REPAIR, MEASURED 2026-09-12: outside bypassPermissions the harness refuses a
+    # Write to a file it has not read this session ("File has not been read yet"),
+    # and the lock denied the Read that would clear it. The one permitted tool was
+    # unusable and the only tool that could unlock it was denied: 4 of 4 real runs
+    # in `default` and `acceptEdits` wedged on message one. Rule 1's exception is
+    # therefore BOTH a Read and a Write whose target is exactly this session's
+    # objective path. Reading the file the hook just injected grants nothing; it is
+    # the write that is gated, and it still is.
+    TGT="$(jq -r '.tool_input.file_path // empty' <<< "$SO_PAYLOAD")"
+    if [ -n "$TGT" ]; then
+      RTGT="$(so_realpath "$TGT" "$CWD")"
+      if [ "$RTGT" = "$RFILE" ]; then
+        so_allow_pretooluse "session-objective: reading this session's own objective file is always permitted — the hook wrote it and has already injected it into this context."
+      fi
+      if under_home "$RTGT"; then
+        so_deny_pretooluse "session-objective: Read on $TGT is denied. Another session's objective file is not this session's business. This session's file is $FILE."
+      fi
+    fi
+    RTGT=""
+    ;;
   Write|Edit|MultiEdit|NotebookEdit)
     TGT="$(jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' <<< "$SO_PAYLOAD")"
     if [ -n "$TGT" ]; then
@@ -195,19 +219,24 @@ case "$TOOL" in
         so_deny_pretooluse "session-objective: this apply_patch cannot be evaluated, so what it would leave on disk cannot be checked and it is refused — $WHY. Re-send it as $HOWTO."
       fi
       validate_proposal "$NEW"
-      exit 0
+      so_allow_pretooluse "session-objective: this patch rewrites this session's own objective file and nothing else, and the file it would leave on disk passed every check."
     fi
     RTGT=""
     ;;
   Bash)
     CMD="$(jq -r '.tool_input.command // empty' <<< "$SO_PAYLOAD")"
     if grep -qF -- "$(so_home)" <<< "$CMD" || grep -qF -- "$HOMEDIR" <<< "$CMD"; then
-      # The two sanctioned entry points are this plugin's own scripts. Their bound,
-      # stated plainly: this allows the mechanism's own writer by name. It stops
-      # shell edits, heredocs, sed -i, tee and python -c; it does not stop an agent
-      # that chooses to invoke the sanctioned writer. The ledger stays append-only
-      # either way, so nothing the operator said can be removed by this path.
-      if grep -qE '(^|[[:space:]"'"'"'])[^[:space:]]*objective-(decide|show)\.sh([[:space:]]|$)' <<< "$CMD"; then
+      # REPAIR, MEASURED 2026-09-12: this used to allow the plugin's own LEDGER
+      # WRITER by name, so an agent could run it and append a sentence the operator
+      # never said into the layer headed "hook-written, append-only". Append-only
+      # kept anything from disappearing, but putting words in his mouth is the same
+      # failure from the other side. That script is gone; no writer is allowed by
+      # name any more, from any path.
+      #
+      # The single remaining carve-out is objective-show.sh, which PRINTS and has no
+      # write path at all, and only when the command is that script alone: no pipe,
+      # no redirection, no chaining, no substitution, so nothing can ride along.
+      if grep -qE '^[[:space:]]*[^;&|<>$`()]*objective-show\.sh[[:space:]]+[^;&|<>$`()]*$' <<< "$CMD"; then
         exit 0
       fi
       so_deny_pretooluse "session-objective: this Bash command names the objective home ($(so_home)) and is denied. The OPERATOR LEDGER layer is append-only and hook-written; the OBJECTIVE layer is changed only by $HOWTO. Command refused: $CMD"
@@ -226,7 +255,7 @@ if [ -n "${RTGT:-}" ] && [ "$RTGT" = "$RFILE" ]; then
   trap 'rm -f "$NEW"' EXIT
   jq -r '.tool_input.content // empty' <<< "$SO_PAYLOAD" > "$NEW"
   validate_proposal "$NEW"
-  exit 0
+  so_allow_pretooluse "session-objective: this is the sanctioned rewrite of this session's own objective file, and it passed every check."
 fi
 
 # ---------------------------------------------------------------------------
@@ -245,6 +274,6 @@ if [ -z "$BOUND" ]; then
   so_deny_pretooluse "session-objective: $FILE has no readable 'bound to ledger entry <number>' heading, so the write-before-act lock cannot release. Rewrite the whole file with $HOWTO, heading: # OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry $COUNT)"
 fi
 if [ "$BOUND" != "$COUNT" ]; then
-  so_deny_pretooluse "session-objective: $TOOL is denied — the objective is bound to ledger entry $BOUND and the operator's latest message is entry $COUNT. Rewrite the objective FIRST, then work. Exactly one tool call is permitted right now: $HOWTO, rewriting the whole file, OPERATOR LEDGER layer unchanged, heading bound to ledger entry $COUNT. No other tool, no shell heredoc, no Edit. If the write tool refuses because the file changed on disk, write it again: the copy in the SESSION OBJECTIVE block in your context IS the current file, so you do not need to read it first."
+  so_deny_pretooluse "session-objective: $TOOL is denied — the objective is bound to ledger entry $BOUND and the operator's latest message is entry $COUNT. Rewrite the objective FIRST, then work. The only tool calls permitted right now: $PERMITTED — rewriting the whole file, OPERATOR LEDGER layer unchanged, heading bound to ledger entry $COUNT. No other tool, no shell heredoc, no Edit."
 fi
 exit 0

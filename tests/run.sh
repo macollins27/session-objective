@@ -181,6 +181,7 @@ run_one() { # <fixture-json> <inverted?>
     block)  [ "$rc" = "2" ] || { verdict="fail"; why="expected exit 2 (block), got rc=$rc"; } ;;
     ok)     [ "$rc" = "0" ] || { verdict="fail"; why="expected exit 0, got rc=$rc"; } ;;
     fatal)  [ "$rc" = "2" ] || { verdict="fail"; why="expected exit 2 (cannot evaluate), got rc=$rc"; } ;;
+    fail_1) [ "$rc" = "1" ] || { verdict="fail"; why="expected exit 1, got rc=$rc"; } ;;
     *) verdict="fail"; why="unknown expect '$expect'" ;;
   esac
 

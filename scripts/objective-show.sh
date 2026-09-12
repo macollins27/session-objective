@@ -2,6 +2,11 @@
 # SO-ROLE: tool
 # objective-show.sh — the /objective operator surface. Prints the session's file.
 #
+# It is the ONLY script near the objective home the Bash guard permits, because it has
+# no write path of any kind: it resolves a path, checks it is a file, and cats it. The
+# guard admits it only as a bare command — no pipe, redirection, chaining or
+# substitution — so nothing can ride along with it.
+#
 # FAILURE DIRECTION: prints to stderr and exits 1 when it cannot find a file. It
 # blesses nothing and gates nothing, so it has no blocking exit.
 #

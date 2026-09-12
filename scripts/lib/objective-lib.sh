@@ -168,6 +168,20 @@ so_deny_pretooluse() { # <reason...>
   exit 0
 }
 
+# The mirror of so_deny_pretooluse. The objective file lives OUTSIDE the project by
+# design, so in `default` and `acceptEdits` a Read or Write of it needs the operator's
+# permission — and in a headless session nobody is there to grant it. Measured
+# 2026-09-12: the permission system refused the Read ("Claude requested permissions to
+# read from …, but you haven't granted it yet") while the lock refused everything else,
+# and the session wedged on message one. So the gate does not merely stand aside for
+# the two calls Rule 1 permits: it ALLOWS them explicitly, which is the only decision
+# that clears the prompt. It grants nothing beyond this session's own objective file —
+# the file the hook itself just injected — and every other tool call is untouched.
+so_allow_pretooluse() { # <reason...>
+  jq -cn --arg r "$*" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",permissionDecisionReason:$r}}'
+  exit 0
+}
+
 so_now() { date -u +%Y-%m-%dT%H:%MZ; }
 so_today() { date -u +%Y-%m-%d; }
 
@@ -243,13 +257,30 @@ so_realpath() { # <path> [base-dir]
 # ---------------------------------------------------------------------------
 # PROOF denylists
 # ---------------------------------------------------------------------------
-# F3 — a proof that cannot fail proves nothing. `true`, `:`, `exit 0`, a bare echo
-# and an empty command are refused wherever a PROOF is recorded or consumed.
+# F3 — a proof that cannot fail proves nothing. Trivial means the WHOLE command
+# cannot fail: every composition segment is a bare `true`, `:`, `exit 0`, or an
+# echo/printf. A pipeline, a command substitution or a real command anywhere in it
+# makes the exit code depend on something, so it is a proof.
+#
+# MEASURED OVER-BLOCK, NOW FIXED (2026-09-12): the first version anchored `^echo .*$`
+# and `^printf .*$`, which refused the genuine proof
+#     printf 'shipped' | cmp -s - done.txt
+# because the command STARTS with printf. A guard that refuses the real proof trains
+# the agent to write a weaker one, which is the defect it exists to prevent.
 so_proof_trivial() { # <command>
-  local c; c="$(printf '%s' "$1" | so_trim)"
+  local c seg
+  c="$(printf '%s' "$1" | so_trim)"
   [ -z "$c" ] && return 0
-  grep -qE '^(true|/bin/true|:|exit[[:space:]]+0|echo([[:space:]].*)?|printf([[:space:]].*)?|/bin/echo([[:space:]].*)?)$' <<< "$c" && return 0
-  return 1
+  # a command or process substitution means the exit code depends on real work
+  grep -qE '[$]\(|`|<\(' <<< "$c" && return 1
+  while IFS= read -r seg; do
+    seg="$(printf '%s' "$seg" | sed -E 's/[<>]+[[:space:]]*[^[:space:]]*//g' | so_trim)"
+    [ -z "$seg" ] && continue
+    grep -qE '^(true|/bin/true|:|exit[[:space:]]+0)$' <<< "$seg" && continue
+    grep -qE '^(echo|printf|/bin/echo|/usr/bin/printf)([[:space:]].*)?$' <<< "$seg" && continue
+    return 1
+  done <<< "$(printf '%s' "$c" | awk '{ gsub(/\|\||&&|;|\|/, "\n"); print }')"
+  return 0
 }
 
 # F4 — the Stop hook RE-RUNS proof commands. A proof that deletes, pushes, resets,
