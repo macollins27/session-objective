@@ -115,7 +115,8 @@ For one session, without installing:
 claude --plugin-dir /path/to/session-objective
 ```
 
-Requires `jq`. Every hook exits 2 with the install command if it is missing.
+Requires `jq`. Every hook exits 2 with the install command if it is missing. On Codex, evaluating
+an `*** Update File:` patch also requires the `codex` binary on PATH, which by definition it is.
 
 ### The fleet switch
 
@@ -172,6 +173,7 @@ Each is a fixture or a rule stated here; none is skipped.
 | F14 | Stop-gate budget | 3 denials per session, then allow with the visible line, so a genuinely stuck agent can never loop forever. |
 | F15 | `goalpost` installed alongside | Both inject. The two are independent; there is no integration and neither reads the other's state. |
 | F16 | Stop fired while the objective file is missing (hook installed mid-session) | Allow, with a visible line. Your next message creates the file. |
+| F17 | Codex has no `Write` tool, so Rule 1's one exception could never be satisfied | The guard reads the target path out of the `apply_patch` patch text and runs the same Rule 2, cap, F1 and PROOF checks on the content the patch would leave on disk. See [Codex](#codex). |
 
 ---
 
@@ -212,32 +214,57 @@ commit is a save and a push is a backup, and neither is gated by tests.
 
 ## Codex
 
-Codex CLI 0.154.0 fires the same hooks from a project-scoped `.codex/hooks.json` in the same
-CamelCase schema, and its payloads carry everything these rules need: `session_id`, `cwd`,
-`transcript_path`, `prompt` on `UserPromptSubmit`, `tool_name` / `tool_input` / `tool_use_id` on
-`PreToolUse`, `source` on `SessionStart`, and `stop_hook_active` plus `last_assistant_message` on
-`Stop`. Raw captures: [`docs/payload-evidence/codex/`](docs/payload-evidence/codex/).
+session-objective runs on Codex CLI as well as Claude Code, and enforces the same three rules
+there. Install the plugin from the same marketplace manifest:
 
-**The one field Codex does not have is the one Rule 1 turns on.** Codex exposes no `Write` tool.
-Its only file-writing tool is `apply_patch`, whose `tool_input` is a single `command` string holding
-a patch:
+```bash
+codex plugin marketplace add macollins27/session-objective
+codex plugin add session-objective@session-objective
+```
+
+Or wire it per project, which is the form the acceptance runs used — a `.codex/hooks.json` in the
+project root, in the same CamelCase schema, with `command` pointing at each script under
+`scripts/`.
+
+### The one real difference, and how the guard closes it
+
+Codex exposes no `Write` tool. Its only file-writing tool is `apply_patch`, whose `tool_input` is a
+single `command` string holding a patch:
 
 ```json
 {"tool_name": "apply_patch",
- "tool_input": {"command": "*** Begin Patch\n*** Add File: edited.txt\n+patched\n*** End Patch"}}
+ "tool_input": {"command": "*** Begin Patch\n*** Update File: /path/objective.md\n@@\n-old\n+new\n*** End Patch"}}
 ```
 
-There is no `tool_input.file_path` and no `tool_input.content` anywhere in a Codex session, so the
-Rule 1 exception — *a `Write` whose target is exactly this session's objective path* — can never be
-satisfied and a Codex session deadlocks at the first message: the ledger is appended, every tool is
-denied, and the objective can never be written. Measured 2026-09-12 against a real `codex exec`
-session running these exact hooks; the deadlocked objective file it produced is preserved at
-[`docs/payload-evidence/codex/S8-codex-deadlocked-objective.md`](docs/payload-evidence/codex/S8-codex-deadlocked-objective.md).
+There is no `tool_input.file_path` and no `tool_input.content`. The target path is in the patch
+text, on the `*** Add File: `, `*** Update File: `, `*** Delete File: ` and `*** Move to: ` lines,
+so Rule 1's guard reads it there. A patch that reaches the objective home is allowed only when it
+carries **exactly one** file operation, on **exactly** this session's objective path, and that
+operation is an Add or an Update — never a Delete, never a Move, never a second file riding along
+in the same call. Bash stays denied, exactly as on Claude Code.
 
-That is why this repository ships **no Codex manifest**. Supporting Codex means translating
-`apply_patch` into a path-and-content decision, and that is a different piece of work from this one.
+The content the patch would leave on disk is then put through the **same** Rule 2 diff, ledger
+byte-identity check, F1 binding-advance check, word cap and trivial-PROOF check as a Claude `Write`.
+An `Add File` hunk carries the whole file, so it is read straight out of the `+` lines. An
+`Update File` hunk is a partial diff — the real patches measured here rewrite only the OBJECTIVE
+layer and never mention the ledger — so it is applied to a **copy** using Codex's own parser
+(`codex --codex-run-as-apply-patch`). Reconstructing it by hand would be a second parser that can
+disagree with the one Codex will actually run, and a guard that checks content the runtime will not
+write is a guard that fails open. If the applier is unavailable or the patch does not apply, the
+call is denied; it is never allowed on a guess.
 
----
+Two other Codex adaptations, both required for the rules to function rather than optional polish:
+
+- **The instruction names the tool the runtime has.** Claude Code stamps `prompt_id` on its events
+  and Codex stamps `turn_id`, so the injection and every deny say `Write, with file_path=…` on
+  Claude Code and `apply_patch, carrying exactly one file operation, on exactly this path: …` on
+  Codex. Telling a Codex session to use `Write` would be an instruction it cannot follow, and the
+  lock would never release.
+- **The Stop hook reads both transcript formats.** Claude Code writes one event per line with
+  `.type` and `.message.content` blocks; Codex writes a rollout with `.payload.type`. Reading only
+  one would leave the apology-that-ends-the-turn rule silently unenforced on the other.
+
+Raw payload captures from both runtimes: [`docs/payload-evidence/`](docs/payload-evidence/).
 
 ## Related tools, not integrated
 
