@@ -43,6 +43,6 @@ $(cat "$FILE")
 ═══════════════════════════════════════
 This is the live objective for this session. It is bound to ledger entry $(so_bound "$FILE") of $(so_ledger_count "$FILE").
 The OPERATOR LEDGER layer is hook-written and append-only. The OBJECTIVE layer is
-yours to rewrite, with the Write tool, file_path exactly $FILE.
+yours to rewrite, using $(so_write_instruction "$FILE").
 EOF
 exit 0

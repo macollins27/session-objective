@@ -63,13 +63,23 @@ deny() { printf 'session-objective: %s\n' "$*" >&2; exit 2; }
 tool_calls_since_last_user() {
   [ -n "$TRANSCRIPT" ] && [ -r "$TRANSCRIPT" ] || { printf 'unknown'; return 0; }
   local seq tail_
+  # Two transcript formats, because there are two runtimes. Claude Code writes one
+  # event per line with `.type` and `.message.content` blocks; Codex writes a rollout
+  # with `.payload.type`. Reading only one of them would leave the apology-that-ends-
+  # the-turn rule silently unenforced on the other, which is a hole, not a bound.
   seq="$(jq -r '
       def blocks: (.message.content // []);
+      def cxp: (.payload // {});
+      def cxtext: ((cxp.content // []) | map(select(.text? != null)) | map(.text) | join(""));
       if (.type == "user") and (((.isMeta // false) | not))
          and ( (blocks | type) == "string"
                or ((blocks | type) == "array" and ((blocks | map(select(.type? == "tool_result")) | length) == 0)) )
       then "U"
       elif ((blocks | type) == "array") and ((blocks | map(select(.type? == "tool_use")) | length) > 0)
+      then "T"
+      elif (cxp.type == "message") and (cxp.role == "user") and ((cxtext | startswith("<")) | not)
+      then "U"
+      elif (cxp.type == "custom_tool_call") or (cxp.type == "function_call") or (cxp.type == "local_shell_call")
       then "T"
       else empty end' "$TRANSCRIPT" 2>/dev/null | tr -d '\n')" || { printf 'unknown'; return 0; }
   case "$seq" in *U*) ;; *) printf 'unknown'; return 0 ;; esac

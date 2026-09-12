@@ -324,3 +324,88 @@ so_append_entry() { # <file> <text>
   rm -f "$tmp"
   return 0
 }
+
+# ---------------------------------------------------------------------------
+# Runtime, and the tool that rewrites the objective in it
+# ---------------------------------------------------------------------------
+# Claude Code stamps `prompt_id` on its events; Codex stamps `turn_id`. Measured on
+# both runtimes 2026-09-12 (docs/payload-evidence/). The distinction matters for one
+# reason only: Codex exposes no Write tool, so the instruction that releases the
+# write-before-act lock has to name the tool the agent actually has.
+so_runtime() {
+  local t p
+  t="$(so_field turn_id)"; p="$(so_field prompt_id)"
+  if [ -n "$t" ] && [ -z "$p" ]; then printf 'codex'; else printf 'claude'; fi
+}
+
+# The one sentence that tells the agent how to rewrite the file, in its own runtime.
+so_write_instruction() { # <objective-file>
+  if [ "$(so_runtime)" = "codex" ]; then
+    printf 'apply_patch, with exactly one file operation, on exactly this path: %s' "$1"
+  else
+    printf 'the Write tool, with file_path exactly: %s' "$1"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Codex apply_patch (F17 — the Codex half of Rule 1)
+# ---------------------------------------------------------------------------
+# Codex has no Write tool. Its only file-writing tool is `apply_patch`, whose
+# tool_input is one `command` string holding a patch. The target path is inside that
+# text, on the `*** Add File: `, `*** Update File: `, `*** Delete File: ` and
+# `*** Move to: ` lines, so the guard reads it there — the same shape
+# ~/Developer/vision-to-plan/scripts/block-codex-tools.py reads.
+
+# Every path a patch would touch, one per line, unresolved.
+so_patch_targets() { # <patch-text>
+  printf '%s\n' "$1" | sed -nE 's/^\*\*\* (Add File|Update File|Delete File|Move to): (.*)$/\2/p'
+}
+
+# The file operations a patch declares, one per line (Add|Update|Delete|Move).
+so_patch_ops() { # <patch-text>
+  printf '%s\n' "$1" | sed -nE 's/^\*\*\* (Add|Update|Delete) File: .*$/\1/p; s/^\*\*\* (Move) to: .*$/\1/p'
+}
+
+# Produce the file the patch WOULD leave on disk, into <out>.
+#
+# An Add File hunk carries the whole content, so it is read straight out of the `+`
+# lines. An Update File hunk is a partial diff — the real Codex patches measured here
+# replace only the OBJECTIVE layer and never mention the ledger — so reconstructing it
+# by hand would be a second parser that can disagree with the one Codex will actually
+# run, and a guard that checks content Codex will not write is a guard that fails OPEN.
+# So the applier is Codex's own: `codex --codex-run-as-apply-patch`, against a COPY.
+# Its stdout is discarded because stdout is this hook's deny channel.
+#
+# Returns 0 on success; 1 with a reason on stderr when the patch cannot be evaluated,
+# and every caller turns that into a denial.
+so_apply_patch_to_copy() { # <patch-text> <current-file> <out-file>
+  local patch="$1" cur="$2" out="$3" op tmpdir rewritten codexbin
+  op="$(so_patch_ops "$patch" | head -1)"
+  case "$op" in
+    Add)
+      printf '%s\n' "$patch" \
+        | awk '/^\*\*\* (Add|Update|Delete) File: /{f=1; next} /^\*\*\* End Patch$/{f=0} f && /^\+/{print substr($0,2)}' > "$out"
+      [ -s "$out" ] || { printf 'the patch adds no content\n' >&2; return 1; }
+      return 0
+      ;;
+    Update)
+      codexbin="$(command -v codex 2>/dev/null || true)"
+      [ -n "$codexbin" ] || { printf 'an Update File patch can only be evaluated by Codex own patch parser, and the codex binary is not on PATH\n' >&2; return 1; }
+      tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/so-patch.XXXXXX")" || return 1
+      cp "$cur" "$tmpdir/objective.md" || { rm -rf "$tmpdir"; return 1; }
+      rewritten="$(printf '%s\n' "$patch" | awk -v t="$tmpdir/objective.md" '
+        /^\*\*\* Update File: /{ print "*** Update File: " t; next } { print }')"
+      if ! "$codexbin" --codex-run-as-apply-patch "$rewritten" >/dev/null 2>&1; then
+        printf 'the patch does not apply to the current file\n' >&2
+        rm -rf "$tmpdir"; return 1
+      fi
+      cat "$tmpdir/objective.md" > "$out" || { rm -rf "$tmpdir"; return 1; }
+      rm -rf "$tmpdir"
+      return 0
+      ;;
+    *)
+      printf 'only an Add File or an Update File operation can rewrite the objective\n' >&2
+      return 1
+      ;;
+  esac
+}

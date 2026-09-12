@@ -88,7 +88,7 @@ $(so_objective_layer "$FILE")
 INSTRUCTION — rewrite the OBJECTIVE layer to reflect EVERY ledger entry above
 (there are now $COUNT), then work.
 
-Use the Write tool, with file_path exactly: $FILE
+Use $(so_write_instruction "$FILE")
 Rewrite the WHOLE file: keep the OPERATOR LEDGER layer byte-for-byte unchanged, and
 replace the OBJECTIVE layer. Set its heading to:
   # OBJECTIVE (agent-written, rewritten every turn, revision <N+1>, bound to ledger entry $COUNT)

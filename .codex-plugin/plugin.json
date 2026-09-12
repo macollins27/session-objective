@@ -1,0 +1,25 @@
+{
+  "name": "session-objective",
+  "version": "1.1.0",
+  "description": "Every session has one objective file. The agent must rewrite it before it may act, may never silently drop anything the operator said, and may not end a turn while the objective is ACTIVE.",
+  "author": {
+    "name": "Maxwell Collins"
+  },
+  "license": "MIT",
+  "hooks": "./hooks/hooks.json",
+  "commands": "./commands",
+  "interface": {
+    "displayName": "Session Objective",
+    "shortDescription": "One objective file per session: write before act, nothing said disappears, ACTIVE cannot end a turn.",
+    "longDescription": "Five hooks and one file per session. Every message you send is appended to an append-only ledger verbatim; until the agent rewrites the objective to reflect it, every tool call is refused. A constraint may only disappear behind a SUPERSEDED line naming it. A turn does not end while the objective is ACTIVE, and COMPLETE is accepted only when the hook re-runs each PROOF command and reproduces its recorded exit code.",
+    "developerName": "Maxwell Collins",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "/objective"
+    ]
+  }
+}
