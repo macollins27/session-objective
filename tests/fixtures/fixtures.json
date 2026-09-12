@@ -1796,7 +1796,7 @@
       "expect": "deny",
       "expect_contains": [
         "names the objective home",
-        "Write, file_path=@FILE@"
+        "Write, with file_path=@FILE@"
       ]
     },
     {
@@ -2941,6 +2941,797 @@
       "expect_contains": [
         "jq not found",
         "brew install jq"
+      ]
+    },
+    {
+      "id": "F17-allow-apply-patch-rewrites-objective",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-12T14:00Z  build the thing\n+- 2026-09-12T14:01Z  and keep the logs\n+\n+# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)\n+DESIRED OUTCOME\n+Ship the thing.\n+\n+SUCCESS CONDITIONS\n+\n+CONSTRAINTS\n+- never touch production\n+\n+REJECTED INTERPRETATIONS\n+\n+FAILED APPROACHES\n+\n+CURRENT REALITY\n+Nothing built yet.\n+\n+FRONTIER\n+Write the first test.\n+\n+STATUS\n+ACTIVE\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "F17-deny-apply-patch-dropped-constraint",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-12T14:00Z  build the thing\n+- 2026-09-12T14:01Z  and keep the logs\n+\n+# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)\n+DESIRED OUTCOME\n+Ship the thing.\n+\n+SUCCESS CONDITIONS\n+\n+CONSTRAINTS\n+\n+REJECTED INTERPRETATIONS\n+\n+FAILED APPROACHES\n+\n+CURRENT REALITY\n+Nothing built yet.\n+\n+FRONTIER\n+Write the first test.\n+\n+STATUS\n+ACTIVE\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "Missing line: never touch production"
+      ]
+    },
+    {
+      "id": "F17-deny-apply-patch-binding-does-not-advance",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-12T14:00Z  build the thing\n+- 2026-09-12T14:01Z  and keep the logs\n+\n+# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 1)\n+DESIRED OUTCOME\n+Ship the thing.\n+\n+SUCCESS CONDITIONS\n+\n+CONSTRAINTS\n+- never touch production\n+\n+REJECTED INTERPRETATIONS\n+\n+FAILED APPROACHES\n+\n+CURRENT REALITY\n+Nothing built yet.\n+\n+FRONTIER\n+Write the first test.\n+\n+STATUS\n+ACTIVE\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "binding must ADVANCE"
+      ]
+    },
+    {
+      "id": "F17-deny-apply-patch-ledger-changed",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-12T14:00Z  something else\n+\n+# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)\n+DESIRED OUTCOME\n+Ship the thing.\n+\n+SUCCESS CONDITIONS\n+\n+CONSTRAINTS\n+- never touch production\n+\n+REJECTED INTERPRETATIONS\n+\n+FAILED APPROACHES\n+\n+CURRENT REALITY\n+Nothing built yet.\n+\n+FRONTIER\n+Write the first test.\n+\n+STATUS\n+ACTIVE\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "OPERATOR LEDGER layer changed"
+      ]
+    },
+    {
+      "id": "F17-deny-apply-patch-second-file-in-same-patch",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-12T14:00Z  build the thing\n+- 2026-09-12T14:01Z  and keep the logs\n+\n+# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)\n+DESIRED OUTCOME\n+Ship the thing.\n+\n+SUCCESS CONDITIONS\n+\n+CONSTRAINTS\n+- never touch production\n+\n+REJECTED INTERPRETATIONS\n+\n+FAILED APPROACHES\n+\n+CURRENT REALITY\n+Nothing built yet.\n+\n+FRONTIER\n+Write the first test.\n+\n+STATUS\n+ACTIVE\n*** Add File: @CWD@/src/app.ts\n+export {}\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "exactly ONE file operation"
+      ]
+    },
+    {
+      "id": "F17-deny-apply-patch-delete-objective",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Delete File: @FILE@\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "never deleted or moved"
+      ]
+    },
+    {
+      "id": "F17-deny-apply-patch-move-objective",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Update File: @FILE@\n*** Move to: @CWD@/stolen.md\n@@\n-STATUS\n+STATUS\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "exactly ONE file operation"
+      ]
+    },
+    {
+      "id": "F17-deny-apply-patch-names-home-but-unreadable",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "not a patch at all, but it mentions @FILE@ somewhere"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "could not be read"
+      ]
+    },
+    {
+      "id": "F17-deny-apply-patch-unrelated-file-while-locked",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Add File: @CWD@/src/app.ts\n+export {}\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "apply_patch is denied",
+        "apply_patch, carrying exactly one file operation"
+      ]
+    },
+    {
+      "id": "F17-allow-apply-patch-unrelated-file-when-in-sync",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Add File: @CWD@/src/app.ts\n+export {}\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "F17-codex-deny-text-names-apply-patch-not-write",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "ls -la"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "apply_patch, carrying exactly one file operation",
+        "Bash is denied"
+      ],
+      "expect_absent": [
+        "Write, with file_path="
+      ]
+    },
+    {
+      "id": "F17-deny-update-patch-when-applier-unavailable",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Update File: @FILE@\n@@\n-STATUS\n-ACTIVE\n+STATUS\n+ACTIVE\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "hide": [
+        "codex"
+      ],
+      "expect": "deny",
+      "expect_contains": [
+        "cannot be evaluated",
+        "codex binary is not on PATH"
+      ]
+    },
+    {
+      "id": "F17-allow-real-update-patch-through-codex-applier",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "requires": [
+        "codex"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Update File: @FILE@\n@@\n-# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)\n+# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "F17-deny-real-update-patch-that-drops-a-constraint",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "requires": [
+        "codex"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "apply_patch",
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Update File: @FILE@\n@@\n-- never touch production\n\n*** End Patch"
+        },
+        "tool_use_id": "toolu_x",
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "Missing line: never touch production"
+      ]
+    },
+    {
+      "id": "F17-codex-transcript-zero-tool-calls-denied",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Run the migration against the staging database.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "transcript": [
+        "{\"type\": \"response_item\", \"payload\": {\"type\": \"message\", \"role\": \"user\", \"content\": [{\"type\": \"input_text\", \"text\": \"do it\"}]}}",
+        "{\"type\": \"response_item\", \"payload\": {\"type\": \"message\", \"role\": \"assistant\", \"content\": [{\"type\": \"output_text\", \"text\": \"Sorry, you are right.\"}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false,
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "block",
+      "expect_contains": [
+        "made no tool calls after the operator's message"
+      ],
+      "expect_absent": [
+        "could not be read or parsed"
+      ]
+    },
+    {
+      "id": "F17-codex-transcript-with-tool-calls-reads-clean",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Run the migration against the staging database.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "transcript": [
+        "{\"type\": \"response_item\", \"payload\": {\"type\": \"message\", \"role\": \"user\", \"content\": [{\"type\": \"input_text\", \"text\": \"do it\"}]}}",
+        "{\"type\": \"response_item\", \"payload\": {\"type\": \"custom_tool_call\", \"name\": \"exec\", \"input\": \"text(await tools.apply_patch(patch));\"}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false,
+        "turn_id": "turn-1",
+        "model": "gpt-5.6-sol"
+      },
+      "expect": "block",
+      "expect_contains": [
+        "does not end"
+      ],
+      "expect_absent": [
+        "made no tool calls",
+        "could not be read or parsed"
       ]
     },
     {

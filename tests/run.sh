@@ -33,8 +33,21 @@ case "${1:-}" in
   *) echo "usage: run.sh [--red-first|--gate]" >&2; exit 3 ;;
 esac
 
-PASS=0; FAIL=0; RAN=0
+PASS=0; FAIL=0; RAN=0; SKIPPED=0
 FAILED=()
+SKIPS=()
+
+# A fixture may declare a binary it cannot run without (the Codex patch applier).
+# A skipped fixture is NEVER silently a pass: it is counted, named, and --gate refuses
+# to go green unless the missing binary is declared in SO_ALLOW_MISSING.
+missing_requirement() { # <fixture-json> -> prints the missing binary, or nothing
+  local fx="$1" c
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    command -v "$c" >/dev/null 2>&1 || { printf '%s' "$c"; return 0; }
+  done <<< "$(jq -r '(.requires // [])[]' <<< "$fx")"
+  return 0
+}
 
 # ---------------------------------------------------------------------------
 # Inverted stubs for the red-first pass.
@@ -213,6 +226,12 @@ do_pass() { # <inverted?> <label>
   for ((i = 0; i < N; i++)); do
     fx="$(jq -c ".fixtures[$i]" "$FIXTURES")"
     id="$(jq -r '.id' <<< "$fx")"
+    need="$(missing_requirement "$fx")"
+    if [ -n "$need" ]; then
+      SKIPPED=$((SKIPPED + 1)); SKIPS+=("$id (needs $need)")
+      printf '  SKIP  %s — needs %s, which is not on PATH\n' "$id" "$need"
+      continue
+    fi
     res="$(run_one "$fx" "$inverted")"
     RAN=$((RAN + 1))
     if [ "$inverted" = "0" ]; then
@@ -239,8 +258,20 @@ case "$MODE" in
 esac
 
 printf '\n========================================\n'
-printf '  %d passed, %d failed  (%d fixture runs)\n' "$PASS" "$FAIL" "$RAN"
+printf '  %d passed, %d failed, %d skipped  (%d fixture runs)\n' "$PASS" "$FAIL" "$SKIPPED" "$RAN"
 printf '========================================\n'
+if [ "$SKIPPED" -gt 0 ]; then
+  printf 'SKIPPED (a skipped fixture proves nothing):\n'
+  for sk in "${SKIPS[@]}"; do printf '  - %s\n' "$sk"; done
+  for sk in "${SKIPS[@]}"; do
+    b="${sk##*needs }"; b="${b%)}"
+    case " ${SO_ALLOW_MISSING:-} " in
+      *" $b "*) ;;
+      *) printf 'Set SO_ALLOW_MISSING="%s" to accept these skips, or install it.\n' "$b"
+         [ "$MODE" = "gate" ] && { FAIL=$((FAIL + 1)); FAILED+=("skipped: $sk"); } ;;
+    esac
+  done
+fi
 if [ "$RAN" = "0" ]; then echo "WARN: nothing ran." >&2; exit 3; fi
 if [ "$FAIL" -gt 0 ]; then
   printf 'Failures:\n'; for f in "${FAILED[@]}"; do printf '  - %s\n' "$f"; done

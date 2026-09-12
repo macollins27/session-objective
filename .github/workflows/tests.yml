@@ -11,6 +11,13 @@ on:
 jobs:
   fixtures:
     runs-on: ubuntu-latest
+    # Two fixtures exercise a real Codex `*** Update File:` patch and can only run
+    # where the Codex CLI is installed, because the applier is Codex's own parser and
+    # a second parser that disagrees with it would make the guard fail open. The
+    # runner names every skip and refuses to go green on an undeclared one; the step
+    # below asserts that the skipped set is exactly those two and has not grown.
+    env:
+      SO_ALLOW_MISSING: codex
     steps:
       - uses: actions/checkout@v4
       - name: Install jq
@@ -25,3 +32,10 @@ jobs:
         run: bash tests/run.sh
       - name: Fail-closed guard census
         run: bash scripts/check-shell-safety.sh "$PWD"
+      - name: The skipped set is exactly the two Codex-applier fixtures
+        run: |
+          set -euo pipefail
+          got=$(bash tests/run.sh 2>&1 | grep '^  SKIP' | sed -E 's/^  SKIP  ([^ ]+) .*/\1/' | sort | tr '\n' ' ')
+          want="F17-allow-real-update-patch-through-codex-applier F17-deny-real-update-patch-that-drops-a-constraint "
+          echo "skipped: $got"
+          test "$got" = "$want"
