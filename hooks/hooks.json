@@ -1,0 +1,71 @@
+{
+  "description": "session-objective: one objective file per session. [UserPromptSubmit] append the operator's message to the append-only ledger verbatim, reset STATUS to ACTIVE, inject the file and the rewrite instruction || [PreToolUse, every tool] deny every tool call until the OBJECTIVE layer is bound to the latest ledger entry, except the Write that rewrites it; deny any change to the ledger or to the objective home by any other path; deny an objective rewrite that drops a CONSTRAINT or a REJECTED INTERPRETATION without a SUPERSEDED line || [Stop] refuse to end a turn while STATUS is ACTIVE (bounded at 3 denials), refuse a NEEDS-DECISION whose question was never asked, and refuse a COMPLETE whose PROOF commands do not reproduce their recorded exit codes || [SessionStart] re-inject the file on startup, resume and compact; archive it and start empty on clear || [SubagentStart] seed the subagent's own file from the parent's OBJECTIVE layer with an empty ledger, and inject it",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/objective-ledger-append.sh",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/objective-write-gate.sh",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/objective-stop-gate.sh",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/objective-session-start.sh",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "compact|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/objective-session-start.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/objective-subagent-seed.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

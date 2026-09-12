@@ -1,0 +1,19 @@
+{
+  "name": "session-objective",
+  "version": "1.0.0",
+  "description": "Every session has one objective file. The agent must rewrite it before it may act, may never silently drop anything the operator said, and may not end a turn while the objective is ACTIVE.",
+  "author": {
+    "name": "Maxwell Collins"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/macollins27/session-objective",
+  "repository": "https://github.com/macollins27/session-objective",
+  "keywords": [
+    "hooks",
+    "objective",
+    "drift",
+    "session"
+  ],
+  "hooks": "./hooks/hooks.json",
+  "commands": "./commands"
+}
