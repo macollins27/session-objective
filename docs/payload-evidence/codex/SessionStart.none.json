@@ -1,0 +1,9 @@
+{
+  "cwd": "/tmp/probe/codexprobe",
+  "hook_event_name": "SessionStart",
+  "model": "gpt-5.6-sol",
+  "permission_mode": "bypassPermissions",
+  "session_id": "01a093f5-9389-7811-b739-262e14ca12ee",
+  "source": "startup",
+  "transcript_path": "/Users/<user>/.codex/sessions/2026/09/12/rollout-2026-09-12T00-52-20-01a093f5-9389-7811-b739-262e14ca12ee.jsonl"
+}

@@ -1,0 +1,7 @@
+{
+  "cwd": "/tmp/probe/probe2",
+  "hook_event_name": "SessionStart",
+  "session_id": "11111111-2222-3333-4444-555555555502",
+  "source": "startup",
+  "transcript_path": "/Users/<user>/.claude/projects/-tmp-probe-probe2/11111111-2222-3333-4444-555555555502.jsonl"
+}

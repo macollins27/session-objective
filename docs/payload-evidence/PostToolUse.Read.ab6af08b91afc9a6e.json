@@ -1,0 +1,29 @@
+{
+  "agent_id": "ab6af08b91afc9a6e",
+  "agent_type": "Explore",
+  "cwd": "/tmp/probe/probe2",
+  "duration_ms": 0,
+  "effort": {
+    "level": "high"
+  },
+  "hook_event_name": "PostToolUse",
+  "permission_mode": "bypassPermissions",
+  "prompt_id": "d86ac3c3-7d3b-495e-858b-2bcf03d47bbc",
+  "session_id": "11111111-2222-3333-4444-555555555502",
+  "tool_input": {
+    "file_path": "/tmp/probe/probe2/note.txt"
+  },
+  "tool_name": "Read",
+  "tool_response": {
+    "file": {
+      "content": "hello probe\n",
+      "filePath": "/tmp/probe/probe2/note.txt",
+      "numLines": 2,
+      "startLine": 1,
+      "totalLines": 2
+    },
+    "type": "text"
+  },
+  "tool_use_id": "toolu_01RyakxRzaqF4RicHAcLEj5h",
+  "transcript_path": "/Users/<user>/.claude/projects/-tmp-probe-probe2/11111111-2222-3333-4444-555555555502.jsonl"
+}

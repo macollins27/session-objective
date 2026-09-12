@@ -1,0 +1,15 @@
+{
+  "background_tasks": [],
+  "cwd": "/tmp/probe/probe2",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "Stop",
+  "last_assistant_message": "DONE\n\nThe note file contains one line, \"hello probe\". The Explore subagent ran the cat command and the Read tool on the same file and reported the identical content both ways.",
+  "permission_mode": "bypassPermissions",
+  "prompt_id": "d86ac3c3-7d3b-495e-858b-2bcf03d47bbc",
+  "session_crons": [],
+  "session_id": "11111111-2222-3333-4444-555555555502",
+  "stop_hook_active": false,
+  "transcript_path": "/Users/<user>/.claude/projects/-tmp-probe-probe2/11111111-2222-3333-4444-555555555502.jsonl"
+}

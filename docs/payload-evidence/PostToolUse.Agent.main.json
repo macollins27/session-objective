@@ -1,0 +1,81 @@
+{
+  "cwd": "/tmp/probe/probe2",
+  "duration_ms": 6351,
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PostToolUse",
+  "permission_mode": "bypassPermissions",
+  "prompt_id": "d86ac3c3-7d3b-495e-858b-2bcf03d47bbc",
+  "session_id": "11111111-2222-3333-4444-555555555502",
+  "tool_input": {
+    "description": "Cat and read note.txt",
+    "prompt": "Run the Bash command: cat note.txt in /tmp/probe/probe2 and report the contents. Then also Read note.txt. Do nothing else.",
+    "run_in_background": false,
+    "subagent_type": "Explore"
+  },
+  "tool_name": "Agent",
+  "tool_response": {
+    "agentId": "ab6af08b91afc9a6e",
+    "agentType": "Explore",
+    "content": [
+      {
+        "text": "Both methods return the same content.\n\nFile: `/tmp/probe/probe2/note.txt`\n\nContents:\n```\nhello probe\n```\n\n- `cat` output: `hello probe`\n- Read output: line 1 is `hello probe` (file ends with a trailing newline, so the tool shows a line 2 marker)",
+        "type": "text"
+      }
+    ],
+    "harnessNoteCount": 0,
+    "harnessSectionHash": "4c2cdbf71abf74e8",
+    "harnessTailCount": 0,
+    "prompt": "Run the Bash command: cat note.txt in /tmp/probe/probe2 and report the contents. Then also Read note.txt. Do nothing else.",
+    "resolvedModel": "claude-opus-5[1m]",
+    "status": "completed",
+    "toolStats": {
+      "bashCount": 1,
+      "editFileCount": 0,
+      "linesAdded": 0,
+      "linesRemoved": 0,
+      "otherToolCount": 0,
+      "readCount": 1,
+      "searchCount": 0
+    },
+    "totalDurationMs": 6350,
+    "totalTokens": 17018,
+    "totalToolUseCount": 2,
+    "usage": {
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 617
+      },
+      "cache_creation_input_tokens": 617,
+      "cache_read_input_tokens": 16236,
+      "inference_geo": "not_available",
+      "input_tokens": 2,
+      "iterations": [
+        {
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 617
+          },
+          "cache_creation_input_tokens": 617,
+          "cache_read_input_tokens": 16236,
+          "input_tokens": 2,
+          "output_tokens": 163,
+          "type": "message"
+        }
+      ],
+      "output_tokens": 163,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_fetch_requests": 0,
+        "web_search_requests": 0
+      },
+      "service_tier": "standard",
+      "speed": "standard"
+    }
+  },
+  "tool_use_id": "toolu_011qWnG8ChAGebyNBoLnFfhL",
+  "transcript_path": "/Users/<user>/.claude/projects/-tmp-probe-probe2/11111111-2222-3333-4444-555555555502.jsonl"
+}

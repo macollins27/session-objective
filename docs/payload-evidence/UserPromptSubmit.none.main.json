@@ -1,0 +1,9 @@
+{
+  "cwd": "/tmp/probe/probe2",
+  "hook_event_name": "UserPromptSubmit",
+  "permission_mode": "bypassPermissions",
+  "prompt": "Use the Read tool on note.txt. Then dispatch exactly one Explore subagent with this prompt: 'Run the Bash command: cat note.txt in /tmp/probe/probe2 and report the contents. Then also Read note.txt. Do nothing else.' Then reply DONE.",
+  "prompt_id": "d86ac3c3-7d3b-495e-858b-2bcf03d47bbc",
+  "session_id": "11111111-2222-3333-4444-555555555502",
+  "transcript_path": "/Users/<user>/.claude/projects/-tmp-probe-probe2/11111111-2222-3333-4444-555555555502.jsonl"
+}

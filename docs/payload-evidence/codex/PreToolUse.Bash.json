@@ -1,0 +1,14 @@
+{
+  "cwd": "/tmp/probe/codexprobe",
+  "hook_event_name": "PreToolUse",
+  "model": "gpt-5.6-sol",
+  "permission_mode": "bypassPermissions",
+  "session_id": "01a093f5-9389-7811-b739-262e14ca12ee",
+  "tool_input": {
+    "command": "test \"$(cat edited.txt)\" = patched && test \"$(wc -l < edited.txt | tr -d ' ')\" = 1"
+  },
+  "tool_name": "Bash",
+  "tool_use_id": "exec-d416cdb4-3924-4161-a365-d9f1c51ecfbe",
+  "transcript_path": "/Users/<user>/.codex/sessions/2026/09/12/rollout-2026-09-12T00-52-20-01a093f5-9389-7811-b739-262e14ca12ee.jsonl",
+  "turn_id": "01a093f5-93ef-70e0-a488-708c4c5fa7a1"
+}

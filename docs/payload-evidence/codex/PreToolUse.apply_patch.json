@@ -1,0 +1,14 @@
+{
+  "cwd": "/tmp/probe/codexprobe",
+  "hook_event_name": "PreToolUse",
+  "model": "gpt-5.6-sol",
+  "permission_mode": "bypassPermissions",
+  "session_id": "01a093f5-9389-7811-b739-262e14ca12ee",
+  "tool_input": {
+    "command": "*** Begin Patch\n*** Add File: edited.txt\n+patched\n*** End Patch"
+  },
+  "tool_name": "apply_patch",
+  "tool_use_id": "exec-0c4d1d47-c6fe-4ff8-b2fb-e06fa43ed573",
+  "transcript_path": "/Users/<user>/.codex/sessions/2026/09/12/rollout-2026-09-12T00-52-20-01a093f5-9389-7811-b739-262e14ca12ee.jsonl",
+  "turn_id": "01a093f5-93ef-70e0-a488-708c4c5fa7a1"
+}

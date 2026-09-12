@@ -1,0 +1,16 @@
+{
+  "cwd": "/tmp/probe/probe2",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PreToolUse",
+  "permission_mode": "bypassPermissions",
+  "prompt_id": "d86ac3c3-7d3b-495e-858b-2bcf03d47bbc",
+  "session_id": "11111111-2222-3333-4444-555555555502",
+  "tool_input": {
+    "file_path": "/tmp/probe/probe2/note.txt"
+  },
+  "tool_name": "Read",
+  "tool_use_id": "toolu_011a5YhJoweXTFTeJXb2ScMu",
+  "transcript_path": "/Users/<user>/.claude/projects/-tmp-probe-probe2/11111111-2222-3333-4444-555555555502.jsonl"
+}

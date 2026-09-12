@@ -1,0 +1,19 @@
+{
+  "cwd": "/tmp/probe/probe2",
+  "effort": {
+    "level": "medium"
+  },
+  "hook_event_name": "PreToolUse",
+  "permission_mode": "bypassPermissions",
+  "prompt_id": "d86ac3c3-7d3b-495e-858b-2bcf03d47bbc",
+  "session_id": "11111111-2222-3333-4444-555555555502",
+  "tool_input": {
+    "description": "Cat and read note.txt",
+    "prompt": "Run the Bash command: cat note.txt in /tmp/probe/probe2 and report the contents. Then also Read note.txt. Do nothing else.",
+    "run_in_background": false,
+    "subagent_type": "Explore"
+  },
+  "tool_name": "Agent",
+  "tool_use_id": "toolu_011qWnG8ChAGebyNBoLnFfhL",
+  "transcript_path": "/Users/<user>/.claude/projects/-tmp-probe-probe2/11111111-2222-3333-4444-555555555502.jsonl"
+}

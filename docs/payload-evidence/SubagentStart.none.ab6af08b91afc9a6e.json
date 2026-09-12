@@ -1,0 +1,9 @@
+{
+  "agent_id": "ab6af08b91afc9a6e",
+  "agent_type": "Explore",
+  "cwd": "/tmp/probe/probe2",
+  "hook_event_name": "SubagentStart",
+  "prompt_id": "d86ac3c3-7d3b-495e-858b-2bcf03d47bbc",
+  "session_id": "11111111-2222-3333-4444-555555555502",
+  "transcript_path": "/Users/<user>/.claude/projects/-tmp-probe-probe2/11111111-2222-3333-4444-555555555502.jsonl"
+}
