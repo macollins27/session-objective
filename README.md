@@ -236,17 +236,30 @@ commit is a save and a push is a backup, and neither is gated by tests.
 
 ## Codex
 
-session-objective runs on Codex CLI as well as Claude Code, and enforces the same three rules
-there. Install the plugin from the same marketplace manifest:
+session-objective enforces the same three rules on Codex CLI, with two facts about Codex that
+the install has to account for (both measured on Codex CLI 0.154.0, 2026-09-12):
+
+1. **`codex plugin add` does not run a plugin's hooks.** Codex runs hooks only from
+   `~/.codex/hooks.json` (or a project's `.codex/hooks.json`), and each new hook must be trusted
+   once in the interactive Codex UI; untrusted hooks are skipped silently.
+2. **Codex's workspace-write sandbox refuses writes outside the project folder**, and the objective
+   file lives outside the project on purpose. Without a writable root for the objective home, a
+   Codex session deadlocks on message one: the hook demands the rewrite and the sandbox refuses it.
+
+So the install is:
 
 ```bash
-codex plugin marketplace add macollins27/session-objective
-codex plugin add session-objective@session-objective
+git clone https://github.com/macollins27/session-objective ~/Developer/session-objective
+bash ~/Developer/session-objective/scripts/install-codex.sh
+codex          # once: approve the five new session-objective hooks when Codex asks
 ```
 
-Or wire it per project, which is the form the acceptance runs used — a `.codex/hooks.json` in the
-project root, in the same CamelCase schema, with `command` pointing at each script under
-`scripts/`.
+`install-codex.sh` is idempotent: it appends the five hooks to `~/.codex/hooks.json` pointing at
+the checkout, adds the objective home to `[sandbox_workspace_write].writable_roots` in
+`~/.codex/config.toml`, backs both files up beside themselves first, and fails closed (exit 2,
+nothing written) if either file does not parse. The marketplace form
+(`codex plugin marketplace add` / `codex plugin add`) still installs the `/objective` command and
+is harmless, but on its own it activates nothing.
 
 ### The one real difference, and how the guard closes it
 

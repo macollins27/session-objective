@@ -258,6 +258,8 @@ case "$MODE" in
   gate)
     do_pass 1 "RED-FIRST: every fixture must fail with its guard stubbed out"
     do_pass 0 "REAL: every fixture must pass against the real hooks"
+    printf '\n=== install-codex.sh red-first ===\n'
+    if bash "$ROOT/tests/test-install-codex.sh"; then RAN=$((RAN + 1)); PASS=$((PASS + 1)); else RAN=$((RAN + 1)); FAIL=$((FAIL + 1)); FAILED+=("test-install-codex.sh (install-codex.sh)"); fi
     printf '\n=== shell safety census ===\n'
     if ! "$ROOT/scripts/check-shell-safety.sh" "$ROOT"; then FAIL=$((FAIL + 1)); FAILED+=("check-shell-safety.sh"); fi
     ;;
