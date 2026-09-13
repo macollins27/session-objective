@@ -11,13 +11,11 @@ on:
 jobs:
   fixtures:
     runs-on: ubuntu-latest
-    # Two fixtures exercise a real Codex `*** Update File:` patch and can only run
-    # where the Codex CLI is installed, because the applier is Codex's own parser and
-    # a second parser that disagrees with it would make the guard fail open. The
-    # runner names every skip and refuses to go green on an undeclared one; the step
-    # below asserts that the skipped set is exactly those two and has not grown.
+    # The suite must skip NOTHING. A fixture skipped for a missing dependency is
+    # named by the runner and refuses to go green undeclared; the step below asserts
+    # the skipped set is empty, so it cannot start growing silently.
     env:
-      SO_ALLOW_MISSING: codex
+      SO_ALLOW_MISSING: ""
     steps:
       - uses: actions/checkout@v4
       - name: Install jq
@@ -26,16 +24,19 @@ jobs:
         run: bash --version | head -1; jq --version
       - name: bash -n over every script
         run: for f in scripts/*.sh scripts/lib/*.sh tests/*.sh; do bash -n "$f" || exit 1; done
+      - name: The interpreter prompt ships
+        run: test -s prompts/interpreter.md
       - name: Red-first — every fixture must fail with its guard stubbed out
         run: bash tests/run.sh --red-first
       - name: Real — every fixture must pass against the real hooks
         run: bash tests/run.sh
       - name: Fail-closed guard census
         run: bash scripts/check-shell-safety.sh "$PWD"
-      - name: The skipped set is exactly the two Codex-applier fixtures
+      - name: The Codex installer's red-first proof
+        run: bash tests/test-install-codex.sh
+      - name: Nothing is skipped
         run: |
           set -euo pipefail
-          got=$(bash tests/run.sh 2>&1 | grep '^  SKIP' | sed -E 's/^  SKIP  ([^ ]+) .*/\1/' | sort | tr '\n' ' ')
-          want="F17-allow-real-update-patch-through-codex-applier F17-deny-real-update-patch-that-drops-a-constraint "
-          echo "skipped: $got"
-          test "$got" = "$want"
+          got=$(bash tests/run.sh 2>&1 | grep -c '^  SKIP' || true)
+          echo "skipped fixtures: $got"
+          test "$got" = "0"
