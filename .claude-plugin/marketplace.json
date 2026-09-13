@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "One objective file per session, written from the operator's messages by an interpreter that has never seen the session.",
-    "version": "2.0.0"
+    "version": "2.0.1"
   },
   "plugins": [
     {
       "name": "session-objective",
       "source": ".",
       "description": "One objective file per session, written from the operator's messages by an interpreter that has never seen the session.",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "author": {
         "name": "Maxwell Collins"
       },

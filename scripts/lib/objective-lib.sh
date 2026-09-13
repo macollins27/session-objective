@@ -292,8 +292,18 @@ so_proof_trivial() { # <command>
   while IFS= read -r seg; do
     seg="$(printf '%s' "$seg" | sed -E 's/[<>]+[[:space:]]*[^[:space:]]*//g' | so_trim)"
     [ -z "$seg" ] && continue
+    # cannot fail, by construction
     grep -qE '^(true|/bin/true|:|exit[[:space:]]+0)$' <<< "$seg" && continue
     grep -qE '^(echo|printf|/bin/echo|/usr/bin/printf)([[:space:]].*)?$' <<< "$seg" && continue
+    # A BARE WORD proves nothing about anything. Measured 2026-09-13: `date` attached to a
+    # D-item about a file that did not exist passed both gates and the session reported
+    # COMPLETE. A command with no argument, no path and no operator cannot be about the
+    # outcome it is attached to; it only reports that the machine is running. The
+    # over-block this buys is real and cheap: a bare `make` is refused, and `make check`
+    # is not.
+    grep -qE '^[A-Za-z_][A-Za-z0-9_-]*$' <<< "$seg" && continue
+    # and these report the machine's own state whatever arguments they are given
+    grep -qE '^(date|pwd|whoami|hostname|id|uname|uptime|sleep)([[:space:]].*)?$' <<< "$seg" && continue
     return 1
   done <<< "$(printf '%s' "$c" | awk '{ gsub(/\|\||&&|;|\|/, "\n"); print }')"
   return 0

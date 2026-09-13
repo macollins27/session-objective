@@ -52,6 +52,18 @@ not assumed (`docs/payload-evidence/`). Caps: OBJECTIVE ≤ 200 words, PROGRESS 
 Any write whose **result** changes a byte of LEDGER or OBJECTIVE is denied — the content the
 runtime would actually leave on disk is what gets judged, not the request that asked for it.
 
+The shell is held to the same boundary in two passes, because a literal match is not enough: a
+command is refused if its text names `objective.md`, `.session-objective` or this session's
+`sessions/<id>` anywhere, **and** every token in it that looks like a path is resolved against the
+payload's own cwd and refused if it lands at or under the objective home. Where a path *lands*
+decides it, not how it reads, so a relative path, a `../` hop or a differently-spelled route are all
+refused. Two costs, both stated rather than hidden: a command that merely *mentions* `objective.md`
+in a comment is refused in any repository (one reframe), and a path assembled purely from shell
+variables — `printf x >> "$D/$F"` — contains no resolvable token and no static check can see where
+it points. That residual is why the LEDGER and OBJECTIVE layers are **also** compared byte-for-byte
+on every sanctioned write: a tamper that gets past the shell guard still cannot be carried forward
+by any write the agent makes.
+
 ## The interpreter
 
 It runs inside the `UserPromptSubmit` hook, after the ledger append. Its entire world is the fixed
@@ -76,8 +88,8 @@ Its answer is a claim until something checks it. `scripts/objective-validate.sh`
 heading, in order; the word caps; `DONE WHEN` numbered `D1, D2, D3`; at most one `OPEN QUESTION`;
 and no `MUST`/`MUST NOT` line dropped without a `SUPERSEDED by #K:` line carrying it. A refusal is
 retried once with the violation in front of the model. If it still drops the operator's own lines,
-the hook puts them back itself, tagged `[kept by hook]` — his words are not lost because a model
-would not repeat them.
+the hook puts them back itself — byte for byte, untagged, with the repair recorded on its own line
+underneath — so his words are not lost because a model would not repeat them.
 
 **When it fails** — timeout, non-zero exit, malformed answer — the OBJECTIVE is left exactly as it
 was, one visible line says so, and the agent keeps working. The session is never wedged. The next
@@ -97,8 +109,17 @@ Measured latency over the acceptance runs: **p50 7.6 s** (5.4 – 9.1 s), once p
 
 A proof is `PROOF: <command> => exit <code>` (re-run in the session cwd, 60 s bound, never
 elevated, destructive commands refused) or `PROOF: reply contains "<phrase>"` (≥ 12 characters,
-checked verbatim against the final message). A proof that cannot fail is refused, and so is one
-resting on the absence of a file nothing says ever existed.
+checked verbatim against the final message). A proof that cannot fail is refused: `true`, `:`,
+`exit 0`, a bare `echo`/`printf`, a substitution wrapped in one (`echo $(false)` exits 0 every
+time), a single bare word with no argument and no path (`date`, `pwd`, `ls`), and the utilities that
+report the machine rather than the work whatever arguments they carry (`date`, `pwd`, `whoami`,
+`hostname`, `id`, `uname`, `uptime`, `sleep`). So is a proof resting on the absence of a file
+nothing says ever existed.
+
+**What no check here can decide: whether a proof is about its D-item at all.** `test -f build.log`
+is a real command with a real exit code, and nothing mechanical can tell that the D-item it is
+attached to was about something else. That judgement belongs to a fresh reader of the finished
+work, and this plugin does not pretend otherwise.
 
 There is **no write-before-act lock** in 2.0. Interpretation has already happened, inside the hook,
 before the agent saw the message. There is nothing left to force.
@@ -167,6 +188,13 @@ once. That gap is the whole product.
   exit, and the hook reads the transcript rather than taking the claim.
 - *`Edit` was denied, forcing 11 KB full rewrites.* An edit is now applied to a copy and the result
   is validated like any other write.
+
+**2026-09-13, version 2.0.1, three defects a fresh verifier found.** A Bash command using a
+*relative* path from the objective home's parent named none of the guarded strings and was allowed;
+the append landed in the append-only ledger. The `[kept by hook]` fallback was dead code — it tagged
+the restored line, and the validator, which compares the operator's previous lines exactly, then
+refused the repair itself, so the objective was never revised. And `D1 PROOF: date => exit 0`,
+attached to a D-item about a file that did not exist, passed both gates and reported COMPLETE.
 
 **2026-09-13, Codex CLI 0.154.0 — one prompt, two entries.** A single typed message fired
 `UserPromptSubmit` twice and the ledger recorded it twice. An identical prompt arriving in the same

@@ -125,7 +125,7 @@ run_one() { # <fixture-json> <inverted?>
 
   local payload
   payload="$(jq -c '.payload' <<< "$fx" \
-    | sed -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g" -e "s#@CWD@#$cwd#g" -e "s#@TRANSCRIPT@#$transcript#g")"
+    | sed -e "s#@HOMEPARENT@#$tmp#g" -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g" -e "s#@CWD@#$cwd#g" -e "s#@TRANSCRIPT@#$transcript#g")"
 
   local bin="$ROOT/scripts"
   if [ "$inverted" = "1" ]; then
@@ -170,7 +170,8 @@ run_one() { # <fixture-json> <inverted?>
   out="$(mktemp "$tmp/out.XXXX")"; err="$(mktemp "$tmp/err.XXXX")"
   local envargs=()
   while IFS= read -r kv; do [ -n "$kv" ] || continue; envargs+=("$kv"); done \
-    <<< "$(jq -r '(.env // {}) | to_entries[] | "\(.key)=\(.value)"' <<< "$fx")"
+    <<< "$(jq -r '(.env // {}) | to_entries[] | "\(.key)=\(.value)"' <<< "$fx" \
+          | sed -e "s#@ROOT@#$ROOT#g" -e "s#@HOME@#$home#g" -e "s#@CWD@#$cwd#g")"
   local args=()
   while IFS= read -r a; do [ -n "$a" ] || continue; args+=("$a"); done \
     <<< "$(jq -r '(.args // [])[]' <<< "$fx" | sed -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g" -e "s#@OBJ@#$objf#g" -e "s#@PREV@#$prevf#g" -e "s#@CWD@#$cwd#g")"

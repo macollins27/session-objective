@@ -161,12 +161,18 @@ if [ "$VRC" != "0" ]; then
       "a line under MUST disappeared"*)     printf 'MUST\t%s\n'    "${r#*: }" >> "$KEPT" ;;
     esac
   done <<< "$REASONS"
+  # The line goes back BYTE FOR BYTE. MEASURED 2026-09-13: an earlier version appended it
+  # with a " [kept by hook]" suffix, and the validator — which compares the operator's
+  # previous lines exactly — then raised the same violation against the repair itself, so
+  # the fallback could never succeed and the objective was left unrevised every time. The
+  # repair is recorded on its own line underneath instead, where it explains itself
+  # without altering what he said.
   SO_KEPT="$KEPT" awk '
     BEGIN {
       while ((getline l < ENVIRON["SO_KEPT"]) > 0) {
         i = index(l, "\t")
         sec = substr(l, 1, i - 1); txt = substr(l, i + 1)
-        K[sec] = K[sec] "- " txt " [kept by hook]\n"
+        K[sec] = K[sec] "- " txt "\n(kept by hook: the interpreter dropped the line above without SUPERSEDED)\n"
       }
     }
     { print }

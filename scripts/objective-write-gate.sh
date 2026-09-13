@@ -191,13 +191,56 @@ case "$TOOL" in
     ;;
   Bash)
     CMD="$(jq -r '.tool_input.command // empty' <<< "$SO_PAYLOAD")"
-    # The WHOLE command, newlines included: grep is line-based, and a first line that
-    # looked harmless once hid a ledger append on its second. This branch can only
-    # refuse or stand aside; it never grants, and nothing is allowed by name.
+    SID="$(so_field session_id)"
+    # THE WHOLE COMMAND, newlines included. `grep` is line-based and a Bash command is
+    # routinely several lines; a first line that looked harmless once hid a ledger
+    # append on its second. `case` matches the entire string.
+    #
+    # Two passes, because a literal match is not enough. MEASURED 2026-09-13: with the
+    # cwd set to the objective home's PARENT, `printf x >> home/sessions/<sid>/objective.md`
+    # contains none of the literal strings this used to look for, was allowed, and the
+    # append landed in the append-only ledger.
+    #
+    #   pass 1  the names the agent never needs in a shell command at all. It has Read
+    #           for its own objective file and nothing else in that home is its business,
+    #           so `objective.md`, `.session-objective` and `sessions/<this session id>`
+    #           are refused wherever they appear. This over-blocks a command that merely
+    #           MENTIONS objective.md in a comment, in any repository. That is a real cost
+    #           and a cheap one: one reframe.
+    #   pass 2  every token that looks like a path is resolved against the payload's cwd
+    #           and compared to the home's REAL path, so a relative path, a `../` hop or a
+    #           differently-spelled route is refused by where it lands, not by how it reads.
+    #
+    # THE REMAINING BOUND, stated rather than hidden: a path assembled purely from shell
+    # variables or command substitution — `printf x >> "$D/$F"` — contains none of those
+    # names and no resolvable token, and no static check can see where it points. That
+    # residual is the same class as the one above, and it is why the LEDGER and OBJECTIVE
+    # layers are ALSO compared byte-for-byte on every sanctioned write: a tamper that gets
+    # past this guard still cannot be carried forward by any write the agent makes.
+    case "$CMD" in
+      *objective.md*|*.session-objective*)
+        so_deny_pretooluse "session-objective: this Bash command names the objective file or home and is denied — every character of the command was read, not just its first line. To read this session's objective, use the Read tool on $FILE, which is permitted. To change PROGRESS, use $HOWTO. Command refused: $CMD" ;;
+    esac
+    if [ -n "$SID" ]; then
+      case "$CMD" in
+        *"sessions/$SID"*)
+          so_deny_pretooluse "session-objective: this Bash command names this session's objective directory and is denied. Use the Read tool on $FILE to read it, and $HOWTO to change PROGRESS. Command refused: $CMD" ;;
+      esac
+    fi
     case "$CMD" in
       *"$(so_home)"*|*"$HOMEDIR"*|*"$FILE"*|*"$RFILE"*)
-        so_deny_pretooluse "session-objective: this Bash command names the objective home ($(so_home)) and is denied — every character of the command was read, not just its first line. To read the file, use the Read tool on $FILE, which is permitted. To change PROGRESS, use $HOWTO. Command refused: $CMD" ;;
+        so_deny_pretooluse "session-objective: this Bash command names the objective home ($(so_home)) and is denied. Use the Read tool on $FILE to read it, and $HOWTO to change PROGRESS. Command refused: $CMD" ;;
     esac
+    while IFS= read -r tok; do
+      [ -n "$tok" ] || continue
+      case "$tok" in
+        */*|*.*) ;;
+        *) continue ;;
+      esac
+      if under_home "$(so_realpath "$tok" "$CWD")"; then
+        so_deny_pretooluse "session-objective: this Bash command carries the path '$tok', which resolves inside the objective home ($(so_home)) — a relative path, a '../' hop and a differently-spelled route all land in the same place, and the guard compares where a token LANDS, not how it reads. Use the Read tool on $FILE, and $HOWTO to change PROGRESS. Command refused: $CMD"
+      fi
+    done <<< "$(printf '%s' "$CMD" | tr '\n' ' ' | sed -E 's/[;&|<>()"'"'"'`]/ /g' | tr -s ' ' '\n')"
     ;;
 esac
 exit 0
