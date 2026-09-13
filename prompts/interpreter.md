@@ -33,6 +33,7 @@ format below, and nothing else. No preamble, no explanation, no code fences, no 
 ## Output format, exactly
 OUTCOME
 <what the whole set of messages asks for, at most 120 words, plain language, no jargon>
+KIND: <task or conversation>
 
 MUST
 - <a requirement> (#K)
@@ -46,6 +47,20 @@ D2 <another>
 
 OPEN QUESTION
 <exactly one plain question, or the single word: none>
+
+## KIND — is he asking for a thing, or for your thoughts?
+- `conversation` — the messages ask for an answer, an explanation, an opinion, a
+  recommendation, or a discussion. Nothing has to exist or change when it is over; the
+  reply IS what he asked for. Someone thinking out loud about work he might ask for later
+  is still `conversation`.
+- `task` — something must exist or change: a file, a running thing, a setting, a message
+  sent, work done.
+- Judge it from his words and nothing else. When the messages hold both — he talked it
+  through and then asked for it — it is `task`, and everything he said while talking it
+  through is a MUST or a MUST NOT of that task, cited to the entry it came from. That is
+  the point of keeping the whole ledger: the discussion is the requirements.
+- A conversation becomes a task the moment he asks for the thing. A task never quietly
+  becomes a conversation.
 
 ## Rules on the document itself
 - At most 200 words in total.

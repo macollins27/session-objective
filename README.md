@@ -23,6 +23,7 @@ agent. It is to take the pen away from it.
 
 # OBJECTIVE (interpreter-written from the ledger only; revision N, bound to ledger entry K; model M)
 OUTCOME        what the whole set of his messages asks for, ≤ 120 words
+KIND           task | conversation — is he asking for a thing, or for your thoughts?
 MUST           his requirements, each citing the entry it came from   (#2)
 MUST NOT       his constraints and rejected interpretations, each citing an entry
 DONE WHEN      D1..Dn, observable end states in plain language
@@ -101,8 +102,9 @@ Measured latency over the acceptance runs: **p50 7.6 s** (5.4 – 9.1 s), once p
 
 | STATUS | Stop hook |
 |---|---|
-| `ACTIVE` | Denied, with `FRONTIER` as the instruction. Bounded at 3 denials per session, then allowed with a visible line. |
-| `ACTIVE`, turn made **no tool calls** since your last message | Denied regardless of the budget. The apology-that-ends-the-turn never passes. |
+| `ACTIVE`, `KIND: conversation` | **Allowed.** He asked for an answer, not for a thing; the reply is the deliverable. |
+| `ACTIVE`, `KIND: task` | Denied, with `FRONTIER` as the instruction. Bounded at 3 denials per session, then allowed with a visible line. |
+| `ACTIVE`, `KIND: task`, turn made **no tool calls** since your last message | Denied regardless of the budget. The apology-that-ends-the-turn never passes. |
 | `WAITING: <what is in flight>` | Allowed only when the transcript shows a background launch since your last message that has not reported back. |
 | `NEEDS-DECISION: <question>` | Allowed only if the question appears verbatim in the final message. |
 | `COMPLETE` | Allowed only when every `D-item` in `DONE WHEN` has a `PROOFS` line that reproduces, and the objective is bound to every ledger entry. |
@@ -123,6 +125,35 @@ work, and this plugin does not pretend otherwise.
 
 There is **no write-before-act lock** in 2.0. Interpretation has already happened, inside the hook,
 before the agent saw the message. There is nothing left to force.
+
+## Just talking
+
+Not every message is a job. Sometimes he wants an answer, an opinion, or to think out loud about
+work he might ask for later — and under the task rules every one of those turns was refused for
+making no tool calls, with the only way out being to write a `PROGRESS` `COMPLETE` carrying a
+reply-contains proof. Correct by the rules, and completely wrong for a conversation.
+
+So the interpreter decides, from his words alone, which kind of thing this is, and says so on one
+line under `OUTCOME`:
+
+```
+KIND: conversation    he asked for an answer, an explanation, an opinion, a discussion.
+                      Nothing has to exist or change when it is over.
+KIND: task            something must exist or change: a file, a setting, work done.
+```
+
+On `conversation` the Stop gate stands down: a reply with no tool calls ends the turn, because the
+reply **is** the deliverable, and no `PROGRESS` write is required. The injected instruction says so
+in as many words, and adds the part that matters — answer him properly, decide, do not hand the
+decision back. `COMPLETE`, `NEEDS-DECISION` and `WAITING` still mean what they mean if the agent
+writes one.
+
+A conversation becomes a task the moment he asks for the thing, and this is where keeping the whole
+ledger pays: everything he said while talking it through is already in the interpreter's input, so
+it lands in the new task's `MUST` and `MUST NOT` lines, each cited to the message it came from. A
+task never quietly becomes a conversation. A `KIND` line the gate cannot read is treated as `task`,
+which is the stricter of the two — a gate that stands down on a line it could not parse is a gate
+that stands down whenever the format drifts.
 
 ## Install
 

@@ -45,6 +45,20 @@ WANT='OUTCOME|MUST|MUST NOT|DONE WHEN|OPEN QUESTION|'
 [ "$ORDER" = "$WANT" ] \
   || say "the headings are wrong or out of order (found: ${ORDER:-none}); required, in this order: OUTCOME, MUST, MUST NOT, DONE WHEN, OPEN QUESTION"
 
+# 1b. KIND — exactly one, one of exactly two values, above MUST
+KINDN="$(printf '%s\n' "$BODY" | grep -cE '^KIND:' || true)"
+if [ "${KINDN:-0}" != "1" ]; then
+  say "there must be exactly one KIND: line (found ${KINDN:-0}); write  KIND: task  or  KIND: conversation  on the line after OUTCOME"
+else
+  grep -qE '^KIND:[[:space:]]*(task|conversation)[[:space:]]*$' <<< "$BODY" \
+    || say "the KIND: line must read exactly 'KIND: task' or 'KIND: conversation' (found: $(grep -m1 -E '^KIND:' <<< "$BODY"))"
+  KLINE="$(printf '%s\n' "$BODY" | grep -nE '^KIND:' | head -1 | cut -d: -f1)"
+  MLINE="$(printf '%s\n' "$BODY" | grep -nE '^MUST[[:space:]]*$' | head -1 | cut -d: -f1)"
+  if [ -n "$KLINE" ] && [ -n "$MLINE" ] && [ "$KLINE" -gt "$MLINE" ]; then
+    say "the KIND: line belongs directly after OUTCOME, above MUST"
+  fi
+fi
+
 # 2. the word cap
 WORDS="$(printf '%s' "$BODY" | wc -w | tr -d ' ')"
 [ "$WORDS" -le 200 ] || say "the objective is $WORDS words; the cap is 200"

@@ -6,6 +6,7 @@
 cat <<'EOF'
 OUTCOME
 Ship the thing.
+KIND: task
 
 MUST
 - something entirely different (#2)

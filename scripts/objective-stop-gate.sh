@@ -4,6 +4,8 @@
 #
 #   WAITING: <what>  -> allowed ONLY when the transcript shows a background launch
 #                      since the operator's last message that has not reported back.
+#   ACTIVE, KIND: conversation -> ALLOW. He asked for an answer, not for a thing; the
+#                      reply is the deliverable and there is nothing to keep working on.
 #   ACTIVE          -> deny with the FRONTIER text, bounded at 3 denials per session
 #                      (F14), then allow with a visible line.
 #   ACTIVE + a turn with zero tool calls after the operator's last message
@@ -52,6 +54,7 @@ fi
 
 CWD="$(so_field cwd)"; [ -d "$CWD" ] || CWD="$PWD"
 STATUS="$(so_status "$FILE")"
+KIND="$(so_objective_kind "$FILE")"
 LASTMSG="$(jq -r '.last_assistant_message // empty' <<< "$SO_PAYLOAD")"
 TRANSCRIPT="$(so_field transcript_path)"
 STATE_DIR="$(dirname "$FILE")"
@@ -226,7 +229,18 @@ case "$STATUS" in
     esac
     ;;
   ACTIVE)
-    : # handled below
+    # When the operator is talking, not asking for a thing, the REPLY is the deliverable
+    # and a text-only turn is the finished work. Under the task rules every such turn was
+    # denied for making no tool calls, and the only way out was to write a PROGRESS
+    # COMPLETE with a reply-contains proof — correct by the rules and wrong for a
+    # conversation. So on KIND: conversation the ACTIVE denial and the zero-tool-call
+    # rule stand down, and PROGRESS is not required. The moment he asks for the thing the
+    # interpreter flips KIND to task and every rule is back, with everything he said
+    # while talking it through carried into the task's MUST and MUST NOT lines.
+    if [ "$KIND" = "conversation" ]; then
+      printf 'session-objective: the objective is a conversation, not a task; your reply is the deliverable.\n' >&2
+      exit 0
+    fi
     ;;
   *)
     deny "STATUS in $FILE is not readable as ACTIVE, WAITING: <what is in flight>, NEEDS-DECISION: <question>, or COMPLETE (read: '${STATUS:-<empty>}'). Rewrite the objective with a STATUS the gate can read."

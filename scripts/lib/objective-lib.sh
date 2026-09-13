@@ -598,3 +598,13 @@ so_ledger_last_text() { # <file>
     n > 0 { buf[n] = buf[n] "\n" $0 }
     END { if (n > 0) printf "%s", buf[n] }'
 }
+
+# Is he asking for a thing, or for your thoughts? The interpreter decides it from his
+# words; the Stop gate reads it here. Anything unreadable is treated as `task`, which is
+# the stricter of the two — a gate that stands down on a line it could not parse is a
+# gate that stands down whenever the format drifts.
+so_objective_kind() { # <file> -> task | conversation
+  local k
+  k="$(so_objective_layer "$1" | sed -nE 's/^KIND:[[:space:]]*(task|conversation)[[:space:]]*$/\1/p' | head -1)"
+  printf '%s' "${k:-task}"
+}

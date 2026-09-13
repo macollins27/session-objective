@@ -124,6 +124,23 @@ call that has never seen this session, and you may not edit a byte of it or of t
 ledger. If it is wrong, that is a fact about what he asked for: say so and let him
 correct it — his next message rewrites it.
 
+EOF
+# Is he asking for a thing, or for your thoughts? The instruction differs, because on a
+# conversation the reply IS the deliverable and there is nothing to write down. Emitted
+# here, at the top level: a heredoc nested inside a command substitution inside another
+# heredoc does not parse, and a guidance block that silently failed to render would leave
+# the agent with no instruction at all.
+if [ "$(so_objective_kind "$FILE")" = "conversation" ]; then
+  cat <<'CONV'
+KIND is conversation: he asked for an answer, not for a thing. YOUR REPLY IS THE
+DELIVERABLE. No PROGRESS write is needed and the turn may end on your reply alone — the
+Stop hook stands down. Answer him properly: decide, say what you would do and why, in
+plain English, and do not hand the decision back to him. If he then asks for the thing,
+KIND flips to task on his next message, and everything he said while talking it through
+becomes that task's requirements.
+CONV
+else
+  cat <<EOF
 PROGRESS is yours. Keep it current with $(so_write_instruction "$FILE") or an Edit on
 that same path:
   PROOFS           one line per D-item from DONE WHEN, in one of two forms:
@@ -140,10 +157,12 @@ that same path:
                    proof reproduces and the objective is bound to entry $COUNT.
 Long content belongs in a plan or spec file that the objective points at, not in here.
 EOF
+fi
+
 if [ "$FIRST" = "1" ]; then
   cat <<'EOF'
 This is the first message of the session: if OPEN QUESTION is not "none", ask exactly
-that question and stop. Otherwise write PROGRESS and go.
+that question and stop. Otherwise answer him, or write PROGRESS and go.
 EOF
 fi
 exit 0

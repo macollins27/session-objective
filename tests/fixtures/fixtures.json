@@ -11,6 +11,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -47,7 +48,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\none test written\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\none test written\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -64,6 +65,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -100,7 +102,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it my way (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it my way (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -121,6 +123,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -157,7 +160,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  he said something else\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  he said something else\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -177,6 +180,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -213,7 +217,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n"
         },
         "tool_use_id": "t"
       },
@@ -233,6 +237,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -289,6 +294,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -325,7 +331,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\n\n\nFRONTIER\nword word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\n\n\nFRONTIER\nword word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -345,6 +351,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -381,7 +388,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\nword word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\n\nCURRENT REALITY\nword word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -401,6 +408,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -453,6 +461,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -508,6 +517,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -560,6 +570,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -612,6 +623,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -667,6 +679,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -722,6 +735,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -778,6 +792,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -834,6 +849,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -887,6 +903,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -941,6 +958,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -998,6 +1016,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1055,6 +1074,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1112,6 +1132,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1169,6 +1190,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1227,6 +1249,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1261,7 +1284,7 @@
         "hook_event_name": "PreToolUse",
         "tool_name": "apply_patch",
         "tool_input": {
-          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-13T14:00Z  build the thing\n+\n+# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\n+OUTCOME\n+Ship the thing.\n+\n+MUST\n+- build it (#1)\n+\n+MUST NOT\n+\n+DONE WHEN\n+D1 the thing exists and runs\n+\n+OPEN QUESTION\n+none\n+\n+# PROGRESS (agent-written)\n+PROOFS\n+\n+CURRENT REALITY\n+one test written\n+\n+FRONTIER\n+write the first test\n+\n+IN FLIGHT\n+none\n+\n+STATUS\n+ACTIVE\n*** End Patch"
+          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-13T14:00Z  build the thing\n+\n+# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\n+OUTCOME\n+Ship the thing.\n+KIND: task\n+\n+MUST\n+- build it (#1)\n+\n+MUST NOT\n+\n+DONE WHEN\n+D1 the thing exists and runs\n+\n+OPEN QUESTION\n+none\n+\n+# PROGRESS (agent-written)\n+PROOFS\n+\n+CURRENT REALITY\n+one test written\n+\n+FRONTIER\n+write the first test\n+\n+IN FLIGHT\n+none\n+\n+STATUS\n+ACTIVE\n*** End Patch"
         },
         "tool_use_id": "t",
         "turn_id": "turn-1"
@@ -1279,6 +1302,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1313,7 +1337,7 @@
         "hook_event_name": "PreToolUse",
         "tool_name": "apply_patch",
         "tool_input": {
-          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-13T14:00Z  build the thing\n+\n+# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\n+OUTCOME\n+Ship the thing.\n+\n+MUST\n+- build it my way (#1)\n+\n+MUST NOT\n+\n+DONE WHEN\n+D1 the thing exists and runs\n+\n+OPEN QUESTION\n+none\n+\n+# PROGRESS (agent-written)\n+PROOFS\n+\n+CURRENT REALITY\n+\n+\n+FRONTIER\n+write the first test\n+\n+IN FLIGHT\n+none\n+\n+STATUS\n+ACTIVE\n*** End Patch"
+          "command": "*** Begin Patch\n*** Add File: @FILE@\n+# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n+\n+- 2026-09-13T14:00Z  build the thing\n+\n+# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\n+OUTCOME\n+Ship the thing.\n+KIND: task\n+\n+MUST\n+- build it my way (#1)\n+\n+MUST NOT\n+\n+DONE WHEN\n+D1 the thing exists and runs\n+\n+OPEN QUESTION\n+none\n+\n+# PROGRESS (agent-written)\n+PROOFS\n+\n+CURRENT REALITY\n+\n+\n+FRONTIER\n+write the first test\n+\n+IN FLIGHT\n+none\n+\n+STATUS\n+ACTIVE\n*** End Patch"
         },
         "tool_use_id": "t",
         "turn_id": "turn-1"
@@ -1334,6 +1358,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1389,6 +1414,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1425,7 +1451,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: true => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: true => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -1445,6 +1471,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1481,7 +1508,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: echo $(false) => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: echo $(false) => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -1501,6 +1528,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1537,7 +1565,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: printf 'shipped' | cmp -s - done.txt => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: printf 'shipped' | cmp -s - done.txt => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -1554,6 +1582,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1590,7 +1619,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: reply contains \"use the transcript usage fields\"\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: reply contains \"use the transcript usage fields\"\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -1607,6 +1636,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1643,7 +1673,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: reply contains \"short\"\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: reply contains \"short\"\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -1663,6 +1693,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1699,7 +1730,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: test ! -e @CWD@/never-made.flag => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: test ! -e @CWD@/never-made.flag => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -1719,6 +1750,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1755,7 +1787,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: test ! -e @CWD@/old.log => exit 0\n\nCURRENT REALITY\nDeleted @CWD@/old.log left by the previous build.\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: test ! -e @CWD@/old.log => exit 0\n\nCURRENT REALITY\nDeleted @CWD@/old.log left by the previous build.\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -1772,6 +1804,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1828,6 +1861,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1886,6 +1920,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1944,6 +1979,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -1996,6 +2032,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2051,6 +2088,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2104,6 +2142,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2160,6 +2199,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2215,6 +2255,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2267,6 +2308,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2319,6 +2361,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2374,6 +2417,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2430,6 +2474,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2485,6 +2530,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2540,6 +2586,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2599,6 +2646,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2656,6 +2704,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2717,6 +2766,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2777,6 +2827,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2834,6 +2885,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2891,6 +2943,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -2947,6 +3000,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3020,6 +3074,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3069,6 +3124,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3123,6 +3179,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3177,6 +3234,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3228,6 +3286,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3285,6 +3344,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3343,6 +3403,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3442,6 +3503,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3494,6 +3556,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3563,6 +3626,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3619,6 +3683,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -3656,6 +3721,7 @@
         "@OBJ@": [
           "OUTCOME",
           "Ship the thing.",
+          "KIND: task",
           "",
           "MUST",
           "- build it (#1)",
@@ -3747,6 +3813,7 @@
         "@OBJ@": [
           "OUTCOME",
           "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word",
+          "KIND: task",
           "",
           "MUST",
           "- build it (#1)",
@@ -3779,6 +3846,7 @@
         "@OBJ@": [
           "OUTCOME",
           "Ship the thing.",
+          "KIND: task",
           "",
           "MUST",
           "- build it (#1)",
@@ -3812,6 +3880,7 @@
         "@OBJ@": [
           "OUTCOME",
           "Ship the thing.",
+          "KIND: task",
           "",
           "MUST",
           "- something else (#2)",
@@ -3828,6 +3897,7 @@
         "@PREV@": [
           "OUTCOME",
           "Ship the thing.",
+          "KIND: task",
           "",
           "MUST",
           "- build it (#1)",
@@ -3861,6 +3931,7 @@
         "@OBJ@": [
           "OUTCOME",
           "Ship the thing.",
+          "KIND: task",
           "",
           "MUST",
           "- SUPERSEDED by #2: build it (#1)",
@@ -3877,6 +3948,7 @@
         "@PREV@": [
           "OUTCOME",
           "Ship the thing.",
+          "KIND: task",
           "",
           "MUST",
           "- build it (#1)",
@@ -3954,6 +4026,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4274,6 +4347,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4329,6 +4403,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4381,6 +4456,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4436,6 +4512,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4491,6 +4568,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4546,6 +4624,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4601,6 +4680,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4656,6 +4736,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4708,6 +4789,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4762,6 +4844,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- keep the file in the repo root (#1)",
@@ -4819,10 +4902,11 @@
         "@OBJ@": [
           "OUTCOME",
           "Ship the thing.",
+          "KIND: task",
           "",
           "MUST",
-          "- keep the file in the repo root (#1)",
           "(kept by hook: the interpreter dropped the line above without SUPERSEDED)",
+          "- keep the file in the repo root (#1)",
           "",
           "MUST NOT",
           "",
@@ -4836,6 +4920,7 @@
         "@PREV@": [
           "OUTCOME",
           "Ship the thing.",
+          "KIND: task",
           "",
           "MUST",
           "- keep the file in the repo root (#1)",
@@ -4863,6 +4948,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4899,7 +4985,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: date => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: date => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -4919,6 +5005,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -4955,7 +5042,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: date +%s => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: date +%s => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -4975,6 +5062,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -5031,6 +5119,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -5067,7 +5156,7 @@
         "tool_name": "Write",
         "tool_input": {
           "file_path": "@FILE@",
-          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: test -f @CWD@/x.txt => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
+          "content": "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)\n\n- 2026-09-13T14:00Z  build the thing\n\n# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)\nOUTCOME\nShip the thing.\nKIND: task\n\nMUST\n- build it (#1)\n\nMUST NOT\n\nDONE WHEN\nD1 the thing exists and runs\n\nOPEN QUESTION\nnone\n\n# PROGRESS (agent-written)\nPROOFS\nD1 PROOF: test -f @CWD@/x.txt => exit 0\n\nCURRENT REALITY\n\n\nFRONTIER\nwrite the first test\n\nIN FLIGHT\nnone\n\nSTATUS\nACTIVE\n"
         },
         "tool_use_id": "t"
       },
@@ -5084,6 +5173,7 @@
         "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
         "OUTCOME",
         "Ship the thing.",
+        "KIND: task",
         "",
         "MUST",
         "- build it (#1)",
@@ -5130,6 +5220,668 @@
       "expect": "ok",
       "expect_contains": [
         "every D-item reproduced"
+      ]
+    },
+    {
+      "id": "K-conversation-allows-a-text-only-turn-to-end",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: conversation",
+        "",
+        "MUST",
+        "- build it (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"text\", \"text\": \"Sorry.\"}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false,
+        "last_assistant_message": "Here is what I would do."
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "a conversation, not a task; your reply is the deliverable"
+      ]
+    },
+    {
+      "id": "K-conversation-allows-a-text-only-turn-even-at-budget",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: conversation",
+        "",
+        "MUST",
+        "- build it (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"text\", \"text\": \"Sorry.\"}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "state_files": {
+        "stop-denials.count": "9"
+      },
+      "expect": "ok"
+    },
+    {
+      "id": "K-task-still-denies-a-text-only-turn",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: task",
+        "",
+        "MUST",
+        "- build it (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"text\", \"text\": \"Sorry.\"}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "block",
+      "expect_contains": [
+        "made no tool calls after the operator's message"
+      ]
+    },
+    {
+      "id": "K-task-still-denies-an-active-turn-with-tool-calls",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: task",
+        "",
+        "MUST",
+        "- build it (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"t1\", \"name\": \"Read\", \"input\": {}}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "block",
+      "expect_contains": [
+        "does not end"
+      ]
+    },
+    {
+      "id": "K-conversation-complete-still-checks-its-proofs",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: conversation",
+        "",
+        "MUST",
+        "- build it (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "D1 PROOF: test -f @CWD@/nope.txt => exit 0",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "COMPLETE"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"t1\", \"name\": \"Read\", \"input\": {}}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "block",
+      "expect_contains": [
+        "does not reproduce"
+      ]
+    },
+    {
+      "id": "K-conversation-needs-decision-still-checks-the-question",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: conversation",
+        "",
+        "MUST",
+        "- build it (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "NEEDS-DECISION: Which folder?"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"t1\", \"name\": \"Read\", \"input\": {}}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false,
+        "last_assistant_message": "something else"
+      },
+      "expect": "block",
+      "expect_contains": [
+        "does not contain the question"
+      ]
+    },
+    {
+      "id": "K-an-unreadable-kind-is-treated-as-task",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  go",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "x",
+        "KIND: chatty",
+        "",
+        "MUST",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 x",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"text\", \"text\": \"Sorry.\"}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "block",
+      "expect_contains": [
+        "made no tool calls"
+      ]
+    },
+    {
+      "id": "K-injection-says-the-reply-is-the-deliverable-on-a-conversation",
+      "script": "objective-ledger-append.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: conversation",
+        "",
+        "MUST",
+        "- build it (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "go on"
+      },
+      "env": {
+        "SESSION_OBJECTIVE_INTERPRETER": "fail"
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "YOUR REPLY IS THE"
+      ],
+      "expect_absent": [
+        "PROGRESS is yours"
+      ]
+    },
+    {
+      "id": "K-injection-asks-for-progress-on-a-task",
+      "script": "objective-ledger-append.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: task",
+        "",
+        "MUST",
+        "- build it (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "prompt_id": "p1",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "go on"
+      },
+      "env": {
+        "SESSION_OBJECTIVE_INTERPRETER": "fail"
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "PROGRESS is yours"
+      ],
+      "expect_absent": [
+        "YOUR REPLY IS THE"
+      ]
+    },
+    {
+      "id": "K-validator-requires-a-kind-line",
+      "script": "objective-validate.sh",
+      "payload": {
+        "hook_event_name": "none"
+      },
+      "args": [
+        "@OBJ@"
+      ],
+      "write_files": {
+        "@OBJ@": [
+          "OUTCOME",
+          "Ship the thing.",
+          "",
+          "MUST",
+          "- build it (#1)",
+          "",
+          "MUST NOT",
+          "",
+          "DONE WHEN",
+          "D1 the thing exists and runs",
+          "",
+          "OPEN QUESTION",
+          "none",
+          ""
+        ]
+      },
+      "expect": "fail_1",
+      "expect_contains": [
+        "exactly one KIND: line"
+      ]
+    },
+    {
+      "id": "K-validator-refuses-an-invalid-kind",
+      "script": "objective-validate.sh",
+      "payload": {
+        "hook_event_name": "none"
+      },
+      "args": [
+        "@OBJ@"
+      ],
+      "write_files": {
+        "@OBJ@": [
+          "OUTCOME",
+          "Ship the thing.",
+          "KIND: chatty",
+          "",
+          "MUST",
+          "- build it (#1)",
+          "",
+          "MUST NOT",
+          "",
+          "DONE WHEN",
+          "D1 the thing exists and runs",
+          "",
+          "OPEN QUESTION",
+          "none",
+          ""
+        ]
+      },
+      "expect": "fail_1",
+      "expect_contains": [
+        "must read exactly"
+      ]
+    },
+    {
+      "id": "K-validator-accepts-conversation",
+      "script": "objective-validate.sh",
+      "payload": {
+        "hook_event_name": "none"
+      },
+      "args": [
+        "@OBJ@"
+      ],
+      "write_files": {
+        "@OBJ@": [
+          "OUTCOME",
+          "Ship the thing.",
+          "KIND: conversation",
+          "",
+          "MUST",
+          "- build it (#1)",
+          "",
+          "MUST NOT",
+          "",
+          "DONE WHEN",
+          "D1 the thing exists and runs",
+          "",
+          "OPEN QUESTION",
+          "none",
+          ""
+        ]
+      },
+      "expect": "ok"
+    },
+    {
+      "id": "K-conversation-flips-to-task-and-keeps-the-discussion",
+      "script": "objective-interpret.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T14:00Z  how would you count tokens?",
+        "",
+        "- 2026-09-13T14:01Z  ok build it",
+        "",
+        "# OBJECTIVE (interpreter-written from the ledger only; revision 1, bound to ledger entry 1; model test)",
+        "OUTCOME",
+        "Ship the thing.",
+        "KIND: conversation",
+        "",
+        "MUST",
+        "- answer the question about counting tokens (#1)",
+        "",
+        "MUST NOT",
+        "",
+        "DONE WHEN",
+        "D1 the thing exists and runs",
+        "",
+        "OPEN QUESTION",
+        "none",
+        "",
+        "# PROGRESS (agent-written)",
+        "PROOFS",
+        "",
+        "CURRENT REALITY",
+        "",
+        "",
+        "FRONTIER",
+        "write the first test",
+        "",
+        "IN FLIGHT",
+        "none",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "hook_event_name": "none"
+      },
+      "args": [
+        "@FILE@"
+      ],
+      "env": {
+        "SESSION_OBJECTIVE_INTERPRETER_CMD": "@ROOT@/tests/stubs/interpreter-flips-to-task.sh"
+      },
+      "expect": "ok",
+      "expect_file_contains": [
+        "KIND: task",
+        "use the approach discussed in the conversation (#1)",
+        "build the thing (#2)"
       ]
     }
   ]
