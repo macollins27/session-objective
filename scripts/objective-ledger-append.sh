@@ -44,6 +44,19 @@ fi
 [ -n "$(so_objective_heading "$FILE")" ] \
   || so_fatal "$FILE has no '# OBJECTIVE (...)' heading; refusing to append to a file I cannot parse. Failing CLOSED."
 
+# --- D1: a harness notification is not the operator ------------------------
+if so_is_notification "$PROMPT"; then
+  # It is not appended, it does not advance the count, and it does not lock. It does
+  # clear WAITING (D3): the thing that was in flight has landed, so the objective is
+  # live again.
+  ST="$(so_status "$FILE")"
+  case "$ST" in
+    WAITING*) so_set_status "$FILE" "ACTIVE" || true; ST="ACTIVE" ;;
+  esac
+  printf 'session-objective: background notification received; the objective is %s; update the OBJECTIVE layer when the work it reports lands.\n' "${ST:-ACTIVE}"
+  exit 0
+fi
+
 # --- append the message verbatim -------------------------------------------
 # The entry opens with "- <ISO-8601 UTC>  ". A multi-line message keeps its
 # remaining lines raw and unindented; entries are counted by their timestamp
@@ -54,52 +67,58 @@ so_append_entry "$FILE" "$PROMPT" \
 
 COUNT="$(so_ledger_count "$FILE")"
 
-# --- inject (F7: bounded rendering) ----------------------------------------
-# Last 3 entries in full; older entries truncated to 200 characters with a pointer
-# to the file. The ledger render is then capped at 1,100 words, which with the
-# 1,800-word OBJECTIVE cap and this instruction keeps the whole injection near the
-# 3,000-word budget.
-LEDGER_RENDER="$(so_ledger_layer "$FILE" | awk -v keep=3 -v total="$COUNT" '
-  /^- [0-9]{4}-[0-9]{2}-[0-9]{2}T/ { idx++; buf[idx] = $0; next }
-  idx > 0 { buf[idx] = buf[idx] "\n" $0; next }
-  { print }
-  END {
-    for (i = 1; i <= idx; i++) {
-      if (i > total - keep) { print buf[i] }
-      else {
-        s = buf[i]
-        gsub(/\n/, " ", s)
-        if (length(s) > 200) s = substr(s, 1, 200) "  … [entry " i " truncated for injection; full text in the file]"
-        print s
-      }
+# --- inject, under a HARD 8,000-character cap (D2, F7) ----------------------
+# Measured 2026-09-13 02:12:33: a 10.8 KB injection was persisted to a file instead of
+# injected ("Output too large"), so the objective was not in context that turn at all —
+# the one turn it most needed to be. A cap that is merely a word budget is not a cap.
+# Four stages, each tried in order, the first that fits wins; the last one always fits.
+SO_INJECT_CAP=8000
+
+render_ledger() { # <recent-cap> <old-cap> ; 0 means "no limit"
+  so_ledger_layer "$FILE" | awk -v keep=3 -v total="$COUNT" -v rcap="$1" -v ocap="$2" '
+    function clip(s, n, i) {
+      gsub(/\n/, " ", s)
+      if (n > 0 && length(s) > n) return substr(s, 1, n) "  … [entry " i " truncated for injection; full text in the file]"
+      return s
     }
-  }')"
-if [ "$(printf '%s' "$LEDGER_RENDER" | wc -w | tr -d ' ')" -gt 1100 ]; then
-  LEDGER_RENDER="$(printf '%s' "$LEDGER_RENDER" | awk '{ for (i=1;i<=NF;i++) { w++; if (w>1100) { print "\n… [ledger render capped at 1,100 words; the complete ledger is in the file]"; exit } printf "%s%s", $i, (i==NF?"\n":" ") } }')"
-fi
+    /^- [0-9]{4}-[0-9]{2}-[0-9]{2}T/ { idx++; buf[idx] = $0; next }
+    idx > 0 { buf[idx] = buf[idx] "\n" $0; next }
+    { print }
+    END {
+      for (i = 1; i <= idx; i++) {
+        if (i > total - keep) print clip(buf[i], rcap, i)
+        else print clip(buf[i], ocap, i)
+      }
+    }'
+}
 
-cat <<EOF
-═══ SESSION OBJECTIVE (file: $FILE) ═══
-$LEDGER_RENDER
+render_tail_only() {
+  so_ledger_layer "$FILE" | awk -v total="$COUNT" '
+    /^- [0-9]{4}-[0-9]{2}-[0-9]{2}T/ { idx++; buf[idx] = $0; next }
+    idx > 0 { buf[idx] = buf[idx] "\n" $0; next }
+    { print }
+    END {
+      printf "… [%d ledger entries; only the latest is rendered here, the rest are in the file]\n", total
+      s = buf[idx]; gsub(/\n/, " ", s)
+      if (length(s) > 600) s = substr(s, 1, 600) "  … [truncated; full text in the file]"
+      print s
+    }'
+}
 
-$(so_objective_heading "$FILE")
-$(so_objective_layer "$FILE")
-═══════════════════════════════════════
+instruction() {
+  cat <<EOF
 INSTRUCTION — rewrite the OBJECTIVE layer to reflect EVERY ledger entry above
 (there are now $COUNT), then work.
 
 $(if [ "$FIRST" = "1" ]; then
     printf 'Use %s' "$(so_write_instruction "$FILE")"
   else
-    printf 'Two tool calls, in this order, and no others in between:
-'
-    printf '  1. Read %s   — the hook appended to it a moment ago, so the copy the tool
-' "$FILE"
-    printf '     last saw is stale and the Write will be refused without this. The Read is
-'
-    printf '     permitted while the lock is engaged; it is one of the two calls Rule 1 allows.
-'
-    printf '  2. %s' "$(so_write_instruction "$FILE")"
+    printf 'Two tool calls, in this order, and no others in between:\n'
+    printf '  1. Read %s   — the hook appended to it a moment ago, so the copy the tool\n' "$FILE"
+    printf '     last saw is stale and the write will be refused without this. The Read is\n'
+    printf '     permitted while the lock is engaged; it is one of the two calls Rule 1 allows.\n'
+    printf '  2. %s\n' "$(so_write_instruction "$FILE")"
+    printf '     — or Edit on that same path, which is far cheaper once the objective is long.\n'
   fi)
 Rewrite the WHOLE file: keep the OPERATOR LEDGER layer byte-for-byte unchanged, and
 replace the OBJECTIVE layer. Set its heading to:
@@ -116,13 +135,53 @@ recommendation, an answer — use the reply form and quote a phrase of at least 
 characters that your answer will actually contain. Never create a marker file to prove
 advice was given: a file whose only purpose is to be absent proves nothing, and the
 Stop hook refuses it.
+STATUS is ACTIVE, WAITING: <what is in flight>, NEEDS-DECISION: <one plain question>,
+or COMPLETE. Use WAITING when a background agent or job you launched has not reported
+yet — it is the honest way to end a turn, and the hook checks the transcript for a
+launch that has not landed.
 The OBJECTIVE layer is capped at 1,800 words.
 EOF
-
-if [ "$FIRST" = "1" ]; then
-  cat <<'EOF'
+  if [ "$FIRST" = "1" ]; then
+    cat <<'EOF'
 This is the first message of the session: ask at most one question, and only if the
 desired outcome is genuinely ambiguous; otherwise write the objective and go.
 EOF
+  fi
+}
+
+assemble() { # <ledger render>
+  cat <<EOF
+═══ SESSION OBJECTIVE (file: $FILE) ═══
+$1
+
+$(so_objective_heading "$FILE")
+$(so_objective_layer "$FILE")
+═══════════════════════════════════════
+$(instruction)
+EOF
+}
+
+OUT="$(assemble "$(render_ledger 600 600)")"
+if [ "${#OUT}" -gt "$SO_INJECT_CAP" ]; then OUT="$(assemble "$(render_ledger 600 200)")"; fi
+if [ "${#OUT}" -gt "$SO_INJECT_CAP" ]; then OUT="$(assemble "$(render_tail_only)")"; fi
+if [ "${#OUT}" -gt "$SO_INJECT_CAP" ]; then
+  # Last resort: the objective layer alone is over budget. Emit what decides the next
+  # action and say where the rest is. This always fits.
+  OUT="$(cat <<EOF
+═══ SESSION OBJECTIVE (file: $FILE) ═══
+$(so_objective_heading "$FILE")
+… [$COUNT ledger entries and the full OBJECTIVE layer are too long to inject; read the
+file with the Read tool on $FILE — that call is permitted]
+STATUS
+$(so_status "$FILE")
+FRONTIER
+$(so_frontier "$FILE")
+═══════════════════════════════════════
+INSTRUCTION — Read $FILE, then rewrite its OBJECTIVE layer to reflect all $COUNT ledger
+entries, using $(so_write_instruction "$FILE"). Until that write lands, every other tool
+call is denied.
+EOF
+)"
 fi
+printf '%s\n' "$OUT"
 exit 0

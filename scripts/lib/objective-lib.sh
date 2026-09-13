@@ -497,3 +497,81 @@ so_apply_patch_to_copy() { # <patch-text> <current-file> <out-file>
       ;;
   esac
 }
+
+# ---------------------------------------------------------------------------
+# D1 — a harness notification is not the operator
+# ---------------------------------------------------------------------------
+# Background task-notifications arrive through UserPromptSubmit exactly as a typed
+# message does. Measured 2026-09-13: two of them were appended verbatim to the
+# OPERATOR LEDGER as entries 5 and 6, one of them a 4.6 KB verifier report, in a layer
+# headed "hook-written, append-only, agent may not edit" whose whole purpose is to hold
+# what HE said. They advance nothing and they lock nothing.
+so_is_notification() { # <prompt text>
+  local t head
+  t="$(printf '%s' "$1" | sed -E 's/^[[:space:]]+//')"
+  case "$t" in '<task-notification>'*) return 0 ;; esac
+  head="$(printf '%s' "$t" | head -c 200)"
+  grep -qF -- '[SYSTEM NOTIFICATION - NOT USER INPUT]' <<< "$head" && return 0
+  return 1
+}
+
+# Rewrite the STATUS section in place, without touching anything else.
+so_set_status() { # <file> <new status line>
+  local file="$1" new="$2" tmp
+  tmp="$(mktemp "${TMPDIR:-/tmp}/so-status.XXXXXX")" || return 1
+  {
+    so_ledger_layer "$file"
+    so_objective_heading "$file"
+    so_objective_layer "$file" | awk -v names="$SO_SECTIONS" -v newstatus="$new" '
+      BEGIN { n = split(names, H, "|") }
+      function head(line,   i, nm, rest) {
+        for (i = 1; i <= n; i++) {
+          nm = H[i]
+          if (substr(line, 1, length(nm)) != nm) continue
+          rest = substr(line, length(nm) + 1)
+          if (rest == "" || rest ~ /^[[:space:]]/ || rest ~ /^:/) { HEAD = nm; return 1 }
+        }
+        return 0
+      }
+      {
+        if (head($0)) {
+          cur = HEAD
+          if (cur == "STATUS") { print "STATUS"; print newstatus; seen = 1; next }
+          print; next
+        }
+        if (cur == "STATUS") next
+        print
+      }
+      END { if (!seen) { print "STATUS"; print newstatus } }'
+  } > "$tmp" || { rm -f "$tmp"; return 1; }
+  cat "$tmp" > "$file" || { rm -f "$tmp"; return 1; }
+  rm -f "$tmp"
+}
+
+# ---------------------------------------------------------------------------
+# D4 — apply one Edit to a copy, so an 11 KB objective need not be rewritten whole
+# ---------------------------------------------------------------------------
+# Literal, single-occurrence replacement, done with awk and index() so the guard keeps
+# its bash+jq dependency set. old_string and new_string travel through FILES, never
+# through `$( )` or `awk -v`: command substitution strips trailing newlines, so an edit
+# whose old_string ends with a newline — which is how a whole line is deleted — would
+# be silently mis-applied, and `awk -v` would re-interpret backslashes in the operator's
+# own text. The whole file is read as one record so byte-for-byte fidelity is kept.
+# Exit: 0 written · 3 empty old_string · 4 not found · 5 more than one occurrence
+#       · 6 a file could not be read.
+so_apply_edit_to_copy() { # <current-file> <old-string-file> <new-string-file> <out-file>
+  SO_SRC="$1" SO_OLDF="$2" SO_NEWF="$3" awk '
+    BEGIN {
+      RS = "\001"
+      if ((getline src < ENVIRON["SO_SRC"]) < 0) exit 6
+      if ((getline old < ENVIRON["SO_OLDF"]) < 0) exit 6
+      if ((getline new < ENVIRON["SO_NEWF"]) < 0) new = ""
+      if (old == "") exit 3
+      cnt = 0; rest = src
+      while ((i = index(rest, old)) > 0) { cnt++; rest = substr(rest, i + length(old)) }
+      if (cnt == 0) exit 4
+      if (cnt > 1) exit 5
+      i = index(src, old)
+      printf "%s", substr(src, 1, i - 1) new substr(src, i + length(old))
+    }' > "$4"
+}

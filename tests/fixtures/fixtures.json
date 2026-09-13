@@ -695,7 +695,7 @@
       ]
     },
     {
-      "id": "R2-deny-edit-tool-on-objective",
+      "id": "R2-deny-multiedit-tool-on-objective",
       "script": "objective-write-gate.sh",
       "file": [
         "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
@@ -731,17 +731,16 @@
         "cwd": "@CWD@",
         "transcript_path": "@TRANSCRIPT@",
         "hook_event_name": "PreToolUse",
-        "tool_name": "Edit",
+        "tool_name": "MultiEdit",
         "tool_input": {
           "file_path": "@FILE@",
-          "old_string": "a",
-          "new_string": "b"
+          "edits": []
         },
         "tool_use_id": "toolu_x"
       },
       "expect": "deny",
       "expect_contains": [
-        "Edit on @FILE@ is denied"
+        "MultiEdit on @FILE@ is denied"
       ]
     },
     {
@@ -5177,6 +5176,934 @@
       "expect": "ok",
       "expect_contains": [
         "every PROOF reproduced"
+      ]
+    },
+    {
+      "id": "F20-notification-is-not-appended-to-the-ledger",
+      "script": "objective-ledger-append.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "<task-notification>\n<task-id>a11018e5</task-id>\n<summary>the verifier finished</summary>\n</task-notification>"
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "background notification received",
+        "the objective is ACTIVE"
+      ],
+      "expect_file_absent": [
+        "task-notification"
+      ]
+    },
+    {
+      "id": "F20-notification-resets-waiting-to-active",
+      "script": "objective-ledger-append.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "WAITING: the verifier agent"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "<task-notification>\n<task-id>a11018e5</task-id>\n<summary>the verifier finished</summary>\n</task-notification>"
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "the objective is ACTIVE"
+      ],
+      "expect_file_absent": [
+        "WAITING"
+      ]
+    },
+    {
+      "id": "F20-system-notification-marker-is-not-appended",
+      "script": "objective-ledger-append.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "Heads up [SYSTEM NOTIFICATION - NOT USER INPUT] the build finished"
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "background notification received"
+      ],
+      "expect_file_absent": [
+        "SYSTEM NOTIFICATION"
+      ]
+    },
+    {
+      "id": "F20-operator-message-is-still-appended",
+      "script": "objective-ledger-append.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "now do the next thing"
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "INSTRUCTION"
+      ],
+      "expect_file_contains": [
+        "now do the next thing"
+      ]
+    },
+    {
+      "id": "F20-notification-does-not-lock-the-session",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 2)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Read",
+        "tool_input": {
+          "file_path": "@CWD@/x.txt"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "F21-a-5kb-ledger-entry-still-renders-under-the-cap",
+      "script": "objective-ledger-append.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-13T01:00Z  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "relay the verifier verdict",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "second message"
+      },
+      "expect": "ok",
+      "expect_max_chars": 8000,
+      "expect_contains": [
+        "truncated for injection",
+        "STATUS",
+        "FRONTIER",
+        "relay the verifier verdict"
+      ],
+      "expect_file_contains": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ]
+    },
+    {
+      "id": "F22-waiting-with-a-live-agent-launch-allowed",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "relay the verifier verdict",
+        "",
+        "STATUS",
+        "WAITING: the verifier agent"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"toolu_AAA\", \"name\": \"Agent\", \"input\": {\"description\": \"verify\"}}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "a background launch is still open"
+      ]
+    },
+    {
+      "id": "F22-waiting-on-a-backgrounded-bash-allowed",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "relay the verifier verdict",
+        "",
+        "STATUS",
+        "WAITING: the verifier agent"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"toolu_BG\", \"name\": \"Bash\", \"input\": {\"command\": \"sleep 60\", \"run_in_background\": true}}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "a background launch is still open"
+      ]
+    },
+    {
+      "id": "F22-waiting-codex-spawn-agent-allowed",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "relay the verifier verdict",
+        "",
+        "STATUS",
+        "WAITING: the verifier agent"
+      ],
+      "transcript": [
+        "{\"type\": \"response_item\", \"payload\": {\"type\": \"message\", \"role\": \"user\", \"content\": [{\"type\": \"input_text\", \"text\": \"go\"}]}}",
+        "{\"type\": \"response_item\", \"payload\": {\"type\": \"custom_tool_call\", \"name\": \"spawn_agent\", \"input\": \"{}\"}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "ok",
+      "expect_contains": [
+        "a background launch is still open"
+      ]
+    },
+    {
+      "id": "F22-waiting-with-nothing-in-flight-blocked",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "relay the verifier verdict",
+        "",
+        "STATUS",
+        "WAITING: the verifier agent"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"do it\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"t1\", \"name\": \"Read\", \"input\": {}}]}}",
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"t1\", \"content\": \"ok\"}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "block",
+      "expect_contains": [
+        "nothing is in flight",
+        "Set ACTIVE and continue or COMPLETE with proof"
+      ]
+    },
+    {
+      "id": "F22-waiting-after-the-notification-arrived-blocked",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "relay the verifier verdict",
+        "",
+        "STATUS",
+        "WAITING: the verifier agent"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"toolu_AAA\", \"name\": \"Agent\", \"input\": {\"description\": \"verify\"}}]}}",
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"<task-notification><tool-use-id>toolu_AAA</tool-use-id></task-notification>\"}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "block",
+      "expect_contains": [
+        "nothing is in flight"
+      ]
+    },
+    {
+      "id": "F22-waiting-without-a-subject-blocked",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "WAITING:"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"toolu_AAA\", \"name\": \"Agent\", \"input\": {\"description\": \"verify\"}}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "block",
+      "expect_contains": [
+        "does not say what is in flight"
+      ]
+    },
+    {
+      "id": "F22-waiting-on-an-unreadable-transcript-blocked",
+      "script": "objective-stop-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "relay the verifier verdict",
+        "",
+        "STATUS",
+        "WAITING: the verifier agent"
+      ],
+      "transcript": [
+        "{\"type\": \"user\", \"message\": {\"role\": \"user\", \"content\": \"go\"}}",
+        "{\"type\": \"assistant\", \"message\": {\"role\": \"assistant\", \"content\": [{\"type\": \"tool_use\", \"id\": \"toolu_AAA\", \"name\": \"Agent\", \"input\": {\"description\": \"verify\"}}]}}"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "/nonexistent/t.jsonl",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+      },
+      "expect": "block",
+      "expect_contains": [
+        "could not be read",
+        "not granted on an unverified claim"
+      ]
+    },
+    {
+      "id": "F23-allow-edit-of-the-objective-layer",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@FILE@",
+          "old_string": "revision 1, bound to ledger entry 1",
+          "new_string": "revision 2, bound to ledger entry 2"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "allow"
+    },
+    {
+      "id": "F23-deny-edit-spanning-the-ledger",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@FILE@",
+          "old_string": "- 2026-09-12T14:01Z  and keep the logs",
+          "new_string": "- 2026-09-12T14:01Z  he said to skip the logs"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "OPERATOR LEDGER layer changed"
+      ]
+    },
+    {
+      "id": "F23-deny-edit-dropping-a-constraint",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 2, bound to ledger entry 2)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@FILE@",
+          "old_string": "- never touch production\n",
+          "new_string": ""
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "Missing line: never touch production"
+      ]
+    },
+    {
+      "id": "F23-deny-edit-with-a-non-unique-old-string",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@FILE@",
+          "old_string": "\n\n",
+          "new_string": "\n"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "appears more than once"
+      ]
+    },
+    {
+      "id": "F23-deny-edit-whose-old-string-is-absent",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@FILE@",
+          "old_string": "nowhere in the file",
+          "new_string": "x"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "does not appear in"
+      ]
+    },
+    {
+      "id": "F23-deny-edit-with-replace-all",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@FILE@",
+          "old_string": "STATUS",
+          "new_string": "STATUS",
+          "replace_all": true
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "replace_all"
+      ]
+    },
+    {
+      "id": "F23-deny-edit-on-another-sessions-objective",
+      "script": "objective-write-gate.sh",
+      "file": [
+        "# OPERATOR LEDGER (hook-written, append-only, agent may not edit)",
+        "",
+        "- 2026-09-12T14:00Z  build the thing",
+        "- 2026-09-12T14:01Z  and keep the logs",
+        "",
+        "# OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry 1)",
+        "DESIRED OUTCOME",
+        "Ship the thing.",
+        "",
+        "SUCCESS CONDITIONS",
+        "",
+        "CONSTRAINTS",
+        "- never touch production",
+        "",
+        "REJECTED INTERPRETATIONS",
+        "",
+        "FAILED APPROACHES",
+        "",
+        "CURRENT REALITY",
+        "Nothing built yet.",
+        "",
+        "FRONTIER",
+        "Write the first test.",
+        "",
+        "STATUS",
+        "ACTIVE"
+      ],
+      "payload": {
+        "session_id": "sess-1",
+        "cwd": "@CWD@",
+        "transcript_path": "@TRANSCRIPT@",
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@HOME@/sessions/someone-else/objective.md",
+          "old_string": "a",
+          "new_string": "b"
+        },
+        "tool_use_id": "toolu_x"
+      },
+      "expect": "deny",
+      "expect_contains": [
+        "is denied"
       ]
     },
     {

@@ -32,7 +32,7 @@ REJECTED INTERPRETATIONS
 FAILED APPROACHES
 CURRENT REALITY
 FRONTIER                the next concrete action
-STATUS                  ACTIVE | NEEDS-DECISION: <one plain question> | COMPLETE
+STATUS                  ACTIVE | WAITING: <what is in flight> | NEEDS-DECISION: <q> | COMPLETE
 ```
 
 Each SUCCESS CONDITION ends with one of two proofs:
@@ -114,6 +114,7 @@ it — that call is permitted.
 | `ACTIVE` | Deny, with the `FRONTIER` text as the instruction. Bounded at 3 denials per session, then allow with the visible line `objective still ACTIVE; stop-hook budget exhausted`. |
 | `ACTIVE`, and the turn made **no tool calls** since your last message | Denied regardless of the budget. That is the apology-that-ends-the-turn failure, and it never passes. |
 | `NEEDS-DECISION: <question>` | Allowed only if the question is non-empty **and** the final assistant message actually contains it. |
+| `WAITING: <what is in flight>` | Allowed only if the transcript shows a background launch since your last message that has not reported back — an `Agent`/`Task`/`Workflow` call, or a `Bash` call with `run_in_background`, whose id no later `<task-notification>` names. Otherwise it is refused. |
 | `COMPLETE` | Allowed only if every `SUCCESS CONDITION` carries a `PROOF` and the hook, re-running each command in the session cwd, reproduces the recorded exit code. Any mismatch is denied, naming the condition. |
 
 The `COMPLETE` branch is the defense against the agent grading itself: a recorded exit code the
@@ -222,6 +223,36 @@ Each is a fixture or a rule stated here; none is skipped.
 | F17 | Codex has no `Write` tool, so Rule 1's one exception could never be satisfied | The guard reads the target path out of the `apply_patch` patch text and runs the same Rule 2, cap, F1 and PROOF checks on the content the patch would leave on disk. See [Codex](#codex). |
 
 ---
+
+## Measured in real use
+
+Four defects found by reviewing one long operator session, 2026-09-13, and fixed:
+
+- **A harness notification is not the operator.** Background task-notifications arrive through
+  `UserPromptSubmit` exactly as a typed message does, and two of them were appended verbatim to the
+  OPERATOR LEDGER as entries 5 and 6 — one a 4.6 KB verifier report — in the layer whose whole
+  purpose is to hold what *he* said. A prompt that begins `<task-notification>`, or carries
+  `[SYSTEM NOTIFICATION - NOT USER INPUT]` in its first 200 characters, is not appended, does not
+  advance the count and does not lock. It gets one line of acknowledgement, and it clears `WAITING`.
+- **The injection exceeded Claude Code's hook output limit.** At 02:12:33 a 10.8 KB injection was
+  persisted to a file instead of injected, so the objective was not in context on the one turn it
+  most needed to be. The render is now hard-capped at 8,000 characters, degrading in four stages:
+  every entry over 600 characters truncated, then older entries to 200, then a count line plus the
+  latest entry, then — always fitting — the heading, `STATUS`, `FRONTIER` and a pointer to read the
+  file.
+- **The gate forced a false COMPLETE.** Twice the agent had a verifier running in the background,
+  needed to end the turn to receive its notification, was denied for `ACTIVE`, and set `COMPLETE` to
+  escape — with `FRONTIER` still reading "relay the verifier verdict". `WAITING: <what is in flight>`
+  is the third exit, and the hook checks the transcript rather than taking the claim. On Codex a
+  spawn call is detected but the completion correlation is not: Codex rollouts carry no
+  `<task-notification>` record tying a completion back to a launch id, so there a launch after the
+  operator's last message counts as in flight.
+- **Edit was denied, forcing 11 KB full rewrites.** The objective grew to 11 KB and every rewrite
+  was a whole-file `Write`. `Edit` on exactly this session's objective path is now allowed when the
+  edit applied to a copy passes the same validation as a `Write`: exactly one occurrence of
+  `old_string`, ledger byte-identity, binding advance, the word cap, the Rule 2 diff and the proof
+  checks. `replace_all` stays refused — a replacement landing in an unknown number of places cannot
+  be judged against the operator's own lines.
 
 ## Guard invariants
 

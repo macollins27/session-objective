@@ -203,6 +203,13 @@ run_one() { # <fixture-json> <inverted?>
       grep -qF -- "$needle" <<< "$body" && { verdict="fail"; why="output unexpectedly contains: $needle"; break; }
     done <<< "$(jq -r '.expect_absent[]' <<< "$fx")"
   fi
+  # D2 — a size claim needs a size assertion, not a substring one.
+  if [ "$verdict" = "pass" ] && jq -e 'has("expect_max_chars")' >/dev/null <<< "$fx"; then
+    local cap n
+    cap="$(jq -r '.expect_max_chars' <<< "$fx")"
+    n="$(wc -c < "$out" | tr -d ' ')"
+    [ "$n" -le "$cap" ] || { verdict="fail"; why="output is $n characters, over the $cap cap"; }
+  fi
   if [ "$verdict" = "pass" ] && jq -e 'has("expect_file_contains")' >/dev/null <<< "$fx"; then
     while IFS= read -r needle; do
       [ -n "$needle" ] || continue

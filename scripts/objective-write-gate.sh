@@ -60,7 +60,7 @@ if [ "$(so_runtime)" = "codex" ]; then
   PERMITTED="$HOWTO"
 else
   HOWTO="Write, with file_path=$FILE"
-  PERMITTED="Read of $FILE (allowed so the Write tool's read-before-write check can be satisfied), and Write, with file_path=$FILE"
+  PERMITTED="Read of $FILE (allowed so the read-before-write check can be satisfied), then Write, with file_path=$FILE — or Edit on that same path, which is cheaper on a long objective"
 fi
 
 # ---------------------------------------------------------------------------
@@ -187,6 +187,35 @@ case "$TOOL" in
       if under_home "$RTGT"; then
         if [ "$RTGT" = "$RFILE" ] && [ "$TOOL" = "Write" ]; then
           : # falls through to the Rule 2 validation below
+        elif [ "$RTGT" = "$RFILE" ] && [ "$TOOL" = "Edit" ]; then
+          # D4, measured 2026-09-13: the objective reached 11 KB and every rewrite was
+          # a full Write, because Edit was refused outright. The refusal was never
+          # about Edit — it was about judging content the runtime would actually leave
+          # on disk. So the edit is applied to a COPY and that copy goes through the
+          # same validation as a Write. `replace_all` is refused: an edit whose reach
+          # is not exactly one place is not one an operator-protection rule can judge.
+          [ -f "$FILE" ] || exit 0
+          if [ "$(jq -r '.tool_input.replace_all // false' <<< "$SO_PAYLOAD")" = "true" ]; then
+            so_deny_pretooluse "session-objective: an Edit with replace_all on $FILE is denied — a replacement that lands in an unknown number of places cannot be checked against the operator's own lines. Edit one exact, unique piece of text, or rewrite the whole file with $HOWTO."
+          fi
+          NEW="$(mktemp "${TMPDIR:-/tmp}/so-proposed.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
+          OLDF="$(mktemp "${TMPDIR:-/tmp}/so-old.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
+          NEWF="$(mktemp "${TMPDIR:-/tmp}/so-new.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
+          trap 'rm -f "$NEW" "$OLDF" "$NEWF"' EXIT
+          # -j, not -r: a trailing newline in old_string is load-bearing (it is how a
+          # whole line is removed) and must survive intact.
+          jq -j '.tool_input.old_string // ""' <<< "$SO_PAYLOAD" > "$OLDF"
+          jq -j '.tool_input.new_string // ""' <<< "$SO_PAYLOAD" > "$NEWF"
+          so_apply_edit_to_copy "$FILE" "$OLDF" "$NEWF" "$NEW"
+          case "$?" in
+            0) ;;
+            3) so_deny_pretooluse "session-objective: this Edit on $FILE carries an empty old_string, so what it would leave on disk cannot be computed." ;;
+            4) so_deny_pretooluse "session-objective: this Edit's old_string does not appear in $FILE. The hook may have appended to the ledger since you last read it — Read the file again, then Edit." ;;
+            5) so_deny_pretooluse "session-objective: this Edit's old_string appears more than once in $FILE, so which occurrence it would change is undecidable. Include enough surrounding text to make it unique." ;;
+            *) so_deny_pretooluse "session-objective: this Edit on $FILE could not be applied to a copy, so what it would write cannot be checked." ;;
+          esac
+          validate_proposal "$NEW"
+          so_allow_pretooluse "session-objective: this edit changes only this session's own objective file, and the file it would leave on disk passed every check."
         else
           so_deny_pretooluse "session-objective: $TOOL on $TGT is denied. The objective home ($(so_home)) is hook-written. This session's objective file is $FILE and the ONLY sanctioned change to it is $HOWTO, rewriting the whole file with the OPERATOR LEDGER layer byte-for-byte unchanged."
         fi

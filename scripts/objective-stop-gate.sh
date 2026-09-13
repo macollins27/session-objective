@@ -2,6 +2,8 @@
 # SO-ROLE: guard
 # objective-stop-gate.sh — Stop hook. Rule 3: an ACTIVE objective cannot end a turn.
 #
+#   WAITING: <what>  -> allowed ONLY when the transcript shows a background launch
+#                      since the operator's last message that has not reported back.
 #   ACTIVE          -> deny with the FRONTIER text, bounded at 3 denials per session
 #                      (F14), then allow with a visible line.
 #   ACTIVE + a turn with zero tool calls after the operator's last message
@@ -87,6 +89,65 @@ tool_calls_since_last_user() {
   case "$tail_" in *T*) printf 'some' ;; *) printf 'none' ;; esac
 }
 
+# --- D3: is background work actually in flight? ----------------------------
+# Measured 2026-09-13: twice the agent had a verifier running in the background, needed
+# to end the turn to receive its notification, was denied for ACTIVE, and set COMPLETE
+# to escape — with FRONTIER still reading "relay the verifier verdict". The gate turned
+# an honest wait into a false completion. WAITING is the third exit, and it is checked:
+# the transcript must show a launch after the operator's last message that has not
+# reported back.
+#
+# Claude Code: an `Agent`/`Task`/`Workflow` tool_use, or a `Bash` tool_use with
+# run_in_background true, whose id is not later named by a <task-notification> record.
+# Codex: a `custom_tool_call` naming `spawn_agent`/`collaboration.spawn_agent`. Codex
+# rollouts carry NO record correlating a completion back to a launch id — there is no
+# <task-notification> equivalent — so on Codex a launch after the last operator message
+# counts as in flight and the correlation half is simply unavailable. Stated, not hidden.
+#
+# Returns "yes", "no", or "unknown". Unlike the zero-tool-call check this one fails
+# CLOSED: WAITING is an exit, and an exit granted on a transcript nobody could read is
+# the false COMPLETE wearing a different name.
+background_in_flight() {
+  [ -n "$TRANSCRIPT" ] && [ -r "$TRANSCRIPT" ] || { printf 'unknown'; return 0; }
+  local report
+  report="$(jq -rs '
+      def genuine_user:
+        (.type == "user") and (((.isMeta // false) | not))
+        and ( ((.message.content // []) | type) == "string"
+              or ( ((.message.content // []) | type) == "array"
+                   and (((.message.content // []) | map(select(.type? == "tool_result")) | length) == 0) ) );
+      . as $ev
+      | ( [ range(0; ($ev | length)) | select($ev[.] | genuine_user) ] | last // -1 ) as $lastuser
+      | ( [ range(0; ($ev | length)) | select(. > $lastuser) | $ev[.] ] ) as $after
+      | ( [ $after[]
+            | (.message.content // [])
+            | select(type == "array")
+            | .[]
+            | select(.type? == "tool_use")
+            | select((.name == "Agent") or (.name == "Task") or (.name == "Workflow")
+                     or ((.name == "Bash") and ((.input.run_in_background // false) == true)))
+            | .id ] ) as $launches
+      | ( [ $after[]
+            | (.message.content // [])
+            | if type == "string" then .
+              elif type == "array" then (map(select(.type? == "text")) | map(.text) | join(" "))
+              else "" end ] | join(" ") ) as $notifs
+      | ( [ $after[]
+            | (.payload // {})
+            | select(.type == "custom_tool_call")
+            | select((.name // "") | test("spawn_agent")) ] | length ) as $cx
+      | ( [ $launches[] | . as $id | select(($notifs | index($id)) == null) ] | length ) as $open
+      | "\($open) \($cx) \($launches | length)"
+    ' "$TRANSCRIPT" 2>/dev/null)" || { printf 'unknown'; return 0; }
+  [ -n "$report" ] || { printf 'unknown'; return 0; }
+  local open cx total
+  open="$(printf '%s' "$report" | awk '{print $1}')"
+  cx="$(printf '%s' "$report" | awk '{print $2}')"
+  total="$(printf '%s' "$report" | awk '{print $3}')"
+  SO_LAUNCH_TOTAL="${total:-0}"
+  if [ "${open:-0}" -gt 0 ] || [ "${cx:-0}" -gt 0 ]; then printf 'yes'; else printf 'no'; fi
+}
+
 case "$STATUS" in
   COMPLETE)
     CONDS="$(so_entries "$FILE" "SUCCESS CONDITIONS")"
@@ -147,11 +208,22 @@ case "$STATUS" in
       || deny "STATUS is NEEDS-DECISION but your reply does not contain the question. Ask it, in these words: $Q"
     exit 0
     ;;
+  WAITING*)
+    W="$(printf '%s' "$STATUS" | sed -E 's/^WAITING[[:space:]]*:?[[:space:]]*//' | so_trim)"
+    [ -n "$W" ] \
+      || deny "STATUS is WAITING but does not say what is in flight. Write it as: WAITING: <the agent or job you launched and are waiting on>."
+    IF="$(background_in_flight)"
+    case "$IF" in
+      yes) printf 'session-objective: objective WAITING on %s; a background launch is still open.\n' "$W" >&2; exit 0 ;;
+      unknown) deny "STATUS is WAITING but the transcript at ${TRANSCRIPT:-<none>} could not be read, so nothing in flight could be confirmed. WAITING is an exit and it is not granted on an unverified claim: set ACTIVE and continue, or COMPLETE with proof." ;;
+      *) deny "STATUS is WAITING on \"$W\" but nothing is in flight: no background agent or job was launched since the operator's last message that has not already reported back. Set ACTIVE and continue or COMPLETE with proof." ;;
+    esac
+    ;;
   ACTIVE)
     : # handled below
     ;;
   *)
-    deny "STATUS in $FILE is not readable as ACTIVE, NEEDS-DECISION: <question>, or COMPLETE (read: '${STATUS:-<empty>}'). Rewrite the objective with a STATUS the gate can read."
+    deny "STATUS in $FILE is not readable as ACTIVE, WAITING: <what is in flight>, NEEDS-DECISION: <question>, or COMPLETE (read: '${STATUS:-<empty>}'). Rewrite the objective with a STATUS the gate can read."
     ;;
 esac
 
