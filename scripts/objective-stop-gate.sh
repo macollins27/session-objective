@@ -98,11 +98,28 @@ case "$STATUS" in
         *PROOF:*) ;;
         *) deny "STATUS is COMPLETE but this SUCCESS CONDITION has no PROOF line, so nothing can reproduce it: $cond" ;;
       esac
+      # The reply form: the outcome IS the reply, so the final message is the artifact
+      # and it is checked verbatim, case-sensitive.
+      if so_is_reply_proof "$cond"; then
+        phrase="$(so_proof_reply_phrase "$cond")"
+        if [ "${#phrase}" -lt "$SO_REPLY_PHRASE_MIN" ]; then
+          deny "STATUS is COMPLETE but this condition proves itself with a phrase of ${#phrase} characters, which proves nothing: $cond — quote at least $SO_REPLY_PHRASE_MIN characters."
+        fi
+        if [ -z "$LASTMSG" ]; then
+          deny "STATUS is COMPLETE but no final assistant message was available to check this condition against: $cond"
+        fi
+        grep -qF -- "$phrase" <<< "$LASTMSG" \
+          || deny "STATUS is COMPLETE but your reply does not contain the phrase this condition promised: $cond — say it, in those words, or change the condition to what you actually delivered."
+        continue
+      fi
       pcmd="$(printf '%s' "$cond" | sed -E 's/.*PROOF:[[:space:]]*//; s/[[:space:]]*=>[[:space:]]*exit[[:space:]]*[0-9]+[[:space:]]*$//')"
       pexp="$(printf '%s' "$cond" | sed -nE 's/.*=>[[:space:]]*exit[[:space:]]*([0-9]+)[[:space:]]*$/\1/p')"
       [ -n "$pexp" ] || deny "STATUS is COMPLETE but this SUCCESS CONDITION does not end with '=> exit <code>', so there is no recorded exit code to reproduce: $cond"
       if so_proof_trivial "$pcmd"; then
-        deny "STATUS is COMPLETE but this condition's PROOF cannot fail, so it proves nothing: $cond"
+        deny "STATUS is COMPLETE but this condition's PROOF cannot fail, so it proves nothing: $cond — if the outcome IS your reply, write  PROOF: reply contains \"<a phrase of at least $SO_REPLY_PHRASE_MIN characters your answer contains>\""
+      fi
+      if so_proof_absence_is_unwitnessed "$pcmd" "$FILE"; then
+        deny "STATUS is COMPLETE but this condition is proved by the ABSENCE of a file that nothing in this objective says ever existed: $cond — never creating the file is not evidence. If the outcome IS your reply, write  PROOF: reply contains \"<phrase>\"."
       fi
       if so_proof_destructive "$pcmd"; then
         deny "STATUS is COMPLETE but this condition's PROOF is destructive and will not be re-run by a hook: $cond — replace it with a read-only command whose exit code reports the outcome."

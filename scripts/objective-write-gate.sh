@@ -130,9 +130,20 @@ validate_proposal() { # <file holding the proposed objective>
   while IFS= read -r cond; do
     [ -n "$cond" ] || continue
     case "$cond" in *PROOF:*) ;; *) continue ;; esac
+    # The reply form, for an outcome whose evidence IS the reply.
+    if so_is_reply_proof "$cond"; then
+      phrase="$(so_proof_reply_phrase "$cond")"
+      if [ "${#phrase}" -lt "$SO_REPLY_PHRASE_MIN" ]; then
+        so_deny_pretooluse "session-objective: this SUCCESS CONDITION proves itself with a phrase of ${#phrase} characters, which is as easy to hit by accident as \`true\` is: $cond — quote at least $SO_REPLY_PHRASE_MIN characters of the answer you are actually going to give."
+      fi
+      continue
+    fi
     pcmd="$(printf '%s' "$cond" | sed -E 's/.*PROOF:[[:space:]]*//; s/[[:space:]]*=>[[:space:]]*exit[[:space:]]*[0-9]+[[:space:]]*$//')"
     if so_proof_trivial "$pcmd"; then
-      so_deny_pretooluse "session-objective: this SUCCESS CONDITION carries a PROOF that cannot fail, so it proves nothing: $cond — give it a command whose exit code actually depends on the outcome."
+      so_deny_pretooluse "session-objective: this SUCCESS CONDITION carries a PROOF that cannot fail, so it proves nothing: $cond — give it a command whose exit code actually depends on the outcome, or, if the outcome IS your reply, write  PROOF: reply contains \"<a phrase of at least $SO_REPLY_PHRASE_MIN characters your answer will contain>\""
+    fi
+    if so_proof_absence_is_unwitnessed "$pcmd" "$NEW"; then
+      so_deny_pretooluse "session-objective: this SUCCESS CONDITION proves an outcome by the ABSENCE of a file that nothing in this objective says ever existed: $cond — the easiest way to pass it is never to create the file, which is not evidence of anything. If the absence is real work (something was removed), name the path in CURRENT REALITY or FAILED APPROACHES. If the outcome IS your reply, write  PROOF: reply contains \"<phrase>\"."
     fi
   done <<< "$(so_entries "$NEW" "SUCCESS CONDITIONS")"
   return 0

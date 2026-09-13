@@ -26,7 +26,7 @@ Two layers:
 
 # OBJECTIVE (agent-written, rewritten every turn, revision N, bound to ledger entry K)
 DESIRED OUTCOME
-SUCCESS CONDITIONS      one per line; each ends with  PROOF: <command> => exit <code>
+SUCCESS CONDITIONS      one per line; each ends with a PROOF (two forms, below)
 CONSTRAINTS
 REJECTED INTERPRETATIONS
 FAILED APPROACHES
@@ -34,6 +34,26 @@ CURRENT REALITY
 FRONTIER                the next concrete action
 STATUS                  ACTIVE | NEEDS-DECISION: <one plain question> | COMPLETE
 ```
+
+Each SUCCESS CONDITION ends with one of two proofs:
+
+```
+PROOF: <command> => exit <code>     the Stop hook re-runs the command in the session cwd
+PROOF: reply contains "<phrase>"    the Stop hook checks the final assistant message
+```
+
+The second form exists because some outcomes **are** the reply — advice, a recommendation, an
+answer — and there is nothing on disk to point a command at. Measured on a real advice-only session:
+to satisfy the command form the agent invented `test ! -e <scratchpad>/code-written.flag => exit 0`,
+a file that never existed and never would, and the Stop gate accepted COMPLETE on it. That is proof
+theater, and an honest form for those outcomes is the fix. The phrase must be at least 12 characters
+and the final message must contain it verbatim, case-sensitive; a shorter phrase is refused as
+trivial, because it is as easy to hit by accident as `true` is.
+
+The same session is why a **negative-existence** proof — `test ! -e X`, `[ ! -f X ]` — is refused
+unless the objective's own `CURRENT REALITY` or `FAILED APPROACHES` names `X`. Where the absence is
+real work ("the old build log was deleted") the path is named there and the proof stands; where the
+easiest way to pass is never to create the file, it is not evidence of anything.
 
 The OBJECTIVE layer is capped at 1,800 words. A larger write is refused.
 
@@ -44,7 +64,11 @@ The OBJECTIVE layer is capped at 1,800 words. A larger write is refused.
 ### Rule 1 — write before act  (`UserPromptSubmit` + `PreToolUse`)
 
 On every message you send, the hook appends it to the ledger verbatim, then injects the whole file
-with one instruction: rewrite the OBJECTIVE layer to reflect every ledger entry, then work. Until
+with one instruction: rewrite the OBJECTIVE layer to reflect every ledger entry, then work. On every
+turn after the first it names two calls in order — Read the file, then Write it — because the hook
+has just appended to the file and the Write tool refuses a file that changed since it was last read.
+Without that, every turn paid for a failed Write, a Read and a second Write; two of eight objective
+operations in one measured session were that error. Until
 the OBJECTIVE layer's bound ledger entry equals the latest ledger entry, `PreToolUse` denies every
 tool call except two, both on exactly this session's objective path (real-path resolved, so a
 symlink or a `..` cannot widen them): a **`Read`** of it and a **`Write`** to it. On Codex, where

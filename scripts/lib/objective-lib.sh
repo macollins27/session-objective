@@ -299,6 +299,46 @@ so_proof_trivial() { # <command>
   return 0
 }
 
+# The reply form. Some outcomes ARE the reply: advice, a recommendation, an answer.
+# Measured 2026-09-12 on a real advice-only session: to satisfy the per-condition PROOF
+# rule the agent invented `test ! -e <scratchpad>/code-written.flag => exit 0` — a file
+# that never existed and never would — and the Stop gate accepted COMPLETE on it. That
+# is proof theater: a command engineered to pass, attached to an outcome nothing on
+# disk can witness. So there is an honest form for those outcomes:
+#
+#     PROOF: reply contains "<phrase>"
+#
+# The Stop hook satisfies it only when the final assistant message contains the phrase
+# verbatim, case-sensitive. The phrase must be at least 12 characters: a short one is
+# as easy to hit by accident as `true` is, so it is refused as trivial.
+SO_REPLY_PHRASE_MIN=12
+
+so_proof_reply_phrase() { # <success-condition line> -> the phrase, or nothing
+  sed -nE 's/.*PROOF:[[:space:]]*reply contains[[:space:]]*"(.*)"[[:space:]]*$/\1/p' <<< "$1" | head -1
+}
+
+so_is_reply_proof() { # <success-condition line>
+  grep -qE 'PROOF:[[:space:]]*reply contains[[:space:]]*".*"[[:space:]]*$' <<< "$1"
+}
+
+# A negative-existence proof — `test ! -e X`, `[ ! -f X ]` — passes whenever X is
+# absent, and the easiest way to make X absent is never to create it. It is admitted
+# only when the same objective's CURRENT REALITY or FAILED APPROACHES names X, which is
+# the case where the absence is a real claim about work done ("the old file was
+# removed") rather than a claim about a file nobody ever made.
+so_proof_negative_existence_path() { # <command> -> the tested path, or nothing
+  sed -nE 's/^[[:space:]]*(test|\[)[[:space:]]+![[:space:]]*-[efdsL][[:space:]]+([^][:space:]]+).*/\2/p' <<< "$1" | head -1
+}
+
+so_proof_absence_is_unwitnessed() { # <command> <objective-file>
+  local path; path="$(so_proof_negative_existence_path "$1")"
+  [ -n "$path" ] || return 1
+  local seen
+  seen="$( { so_section "$2" "CURRENT REALITY"; so_section "$2" "FAILED APPROACHES"; } 2>/dev/null )"
+  grep -qF -- "$path" <<< "$seen" && return 1
+  return 0
+}
+
 # F4 — the Stop hook RE-RUNS proof commands. A proof that deletes, pushes, resets,
 # elevates, reaches the network with a method, drives docker or redirects into a file
 # would make verification itself destructive, so it is never executed: COMPLETE is

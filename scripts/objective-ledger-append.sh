@@ -88,7 +88,19 @@ $(so_objective_layer "$FILE")
 INSTRUCTION — rewrite the OBJECTIVE layer to reflect EVERY ledger entry above
 (there are now $COUNT), then work.
 
-Use $(so_write_instruction "$FILE")
+$(if [ "$FIRST" = "1" ]; then
+    printf 'Use %s' "$(so_write_instruction "$FILE")"
+  else
+    printf 'Two tool calls, in this order, and no others in between:
+'
+    printf '  1. Read %s   — the hook appended to it a moment ago, so the copy the tool
+' "$FILE"
+    printf '     last saw is stale and the Write will be refused without this. The Read is
+'
+    printf '     permitted while the lock is engaged; it is one of the two calls Rule 1 allows.
+'
+    printf '  2. %s' "$(so_write_instruction "$FILE")"
+  fi)
 Rewrite the WHOLE file: keep the OPERATOR LEDGER layer byte-for-byte unchanged, and
 replace the OBJECTIVE layer. Set its heading to:
   # OBJECTIVE (agent-written, rewritten every turn, revision <N+1>, bound to ledger entry $COUNT)
@@ -96,8 +108,14 @@ Until that write lands, every other tool call is denied.
 
 A line under CONSTRAINTS or REJECTED INTERPRETATIONS may only disappear if the new
 text carries: SUPERSEDED $(so_today) by ledger entry <K>: <the old line>
-Each SUCCESS CONDITION ends with  PROOF: <command> => exit <code>  and the Stop hook
-re-runs those commands before it will accept STATUS COMPLETE.
+Each SUCCESS CONDITION ends with either
+  PROOF: <command> => exit <code>        the Stop hook re-runs the command
+  PROOF: reply contains "<phrase>"       the Stop hook checks your final message
+before it will accept STATUS COMPLETE. When the outcome IS the reply — advice, a
+recommendation, an answer — use the reply form and quote a phrase of at least 12
+characters that your answer will actually contain. Never create a marker file to prove
+advice was given: a file whose only purpose is to be absent proves nothing, and the
+Stop hook refuses it.
 The OBJECTIVE layer is capped at 1,800 words.
 EOF
 
