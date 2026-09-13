@@ -95,7 +95,8 @@ run_one() { # <fixture-json> <inverted?>
   # without this a fixture whose objective names @CWD@ writes the literal token, the
   # proof command points at a path that cannot exist, and the fixture passes for the
   # wrong reason.
-  sub() { sed -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g" -e "s#@CWD@#$cwd#g" -e "s#@TRANSCRIPT@#$transcript#g"; }
+  local nowts; nowts="$(date -u +%Y-%m-%dT%H:%MZ)"
+  sub() { sed -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g" -e "s#@CWD@#$cwd#g" -e "s#@TRANSCRIPT@#$transcript#g" -e "s#@NOW@#$nowts#g"; }
   if jq -e 'has("file")' >/dev/null <<< "$fx"; then
     mkdir -p "$(dirname "$file")"
     jq -r '.file[]' <<< "$fx" | sub > "$file"
@@ -112,6 +113,16 @@ run_one() { # <fixture-json> <inverted?>
   fi
 
   jq -e 'has("payload")' >/dev/null <<< "$fx" || { rm -rf "$tmp"; printf 'fail\tfixture has no payload'; return 0; }
+  # A mechanism fixture may need extra input files; @OBJ@ and @PREV@ name them.
+  local objf="$tmp/candidate.md" prevf="$tmp/previous.md"
+  if jq -e 'has("write_files")' >/dev/null <<< "$fx"; then
+    while IFS= read -r key; do
+      [ -n "$key" ] || continue
+      local dest="$objf"; [ "$key" = "@PREV@" ] && dest="$prevf"
+      jq -r --arg k "$key" '.write_files[$k][]' <<< "$fx" | sub > "$dest"
+    done <<< "$(jq -r '.write_files | keys[]' <<< "$fx")"
+  fi
+
   local payload
   payload="$(jq -c '.payload' <<< "$fx" \
     | sed -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g" -e "s#@CWD@#$cwd#g" -e "s#@TRANSCRIPT@#$transcript#g")"
@@ -162,7 +173,7 @@ run_one() { # <fixture-json> <inverted?>
     <<< "$(jq -r '(.env // {}) | to_entries[] | "\(.key)=\(.value)"' <<< "$fx")"
   local args=()
   while IFS= read -r a; do [ -n "$a" ] || continue; args+=("$a"); done \
-    <<< "$(jq -r '(.args // [])[]' <<< "$fx" | sed -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g")"
+    <<< "$(jq -r '(.args // [])[]' <<< "$fx" | sed -e "s#@HOME@#$home#g" -e "s#@FILE@#$file#g" -e "s#@OBJ@#$objf#g" -e "s#@PREV@#$prevf#g" -e "s#@CWD@#$cwd#g")"
 
   if [ -n "$pathovr" ]; then envargs+=("PATH=$pathovr"); fi
   printf '%s' "$payload" | env SESSION_OBJECTIVE_HOME="$home" "${envargs[@]+"${envargs[@]}"}" \
@@ -209,6 +220,12 @@ run_one() { # <fixture-json> <inverted?>
     cap="$(jq -r '.expect_max_chars' <<< "$fx")"
     n="$(wc -c < "$out" | tr -d ' ')"
     [ "$n" -le "$cap" ] || { verdict="fail"; why="output is $n characters, over the $cap cap"; }
+  fi
+  if [ "$verdict" = "pass" ] && jq -e 'has("expect_ledger_entries")' >/dev/null <<< "$fx"; then
+    local want got
+    want="$(jq -r '.expect_ledger_entries' <<< "$fx")"
+    got="$(awk '/^# OBJECTIVE \(/ { exit } /^- [0-9]{4}-/ { n++ } END { print n + 0 }' "$file" 2>/dev/null || echo 0)"
+    [ "$got" = "$want" ] || { verdict="fail"; why="ledger holds $got entries, expected $want"; }
   fi
   if [ "$verdict" = "pass" ] && jq -e 'has("expect_file_contains")' >/dev/null <<< "$fx"; then
     while IFS= read -r needle; do

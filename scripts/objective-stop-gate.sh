@@ -11,7 +11,7 @@
 #                      apology-that-ends-the-turn failure and it never passes.
 #   NEEDS-DECISION  -> allowed only if the question is non-empty AND the final
 #                      assistant message actually contains it (F2).
-#   COMPLETE        -> allowed only if every SUCCESS CONDITION carries a PROOF and
+#   COMPLETE        -> allowed only if every D-item in DONE WHEN carries a PROOF and
 #                      re-running it in the session cwd reproduces the recorded exit
 #                      code. This is the defense against the agent grading itself.
 #
@@ -150,51 +150,57 @@ background_in_flight() {
 
 case "$STATUS" in
   COMPLETE)
-    CONDS="$(so_entries "$FILE" "SUCCESS CONDITIONS")"
-    [ -n "$CONDS" ] && [ -n "$(printf '%s' "$CONDS" | tr -d '[:space:]')" ] \
-      || deny "STATUS is COMPLETE but there are no SUCCESS CONDITIONS. A completion with nothing to reproduce is the agent grading itself. Add conditions, each ending with  PROOF: <command> => exit <code>  or set STATUS back to ACTIVE."
-    while IFS= read -r cond; do
-      [ -n "$cond" ] || continue
-      case "$cond" in
-        *PROOF:*) ;;
-        *) deny "STATUS is COMPLETE but this SUCCESS CONDITION has no PROOF line, so nothing can reproduce it: $cond" ;;
-      esac
-      # The reply form: the outcome IS the reply, so the final message is the artifact
-      # and it is checked verbatim, case-sensitive.
+    # 2.0: the D-items are the interpreter's, not the agent's, so the agent cannot
+    # shrink what "done" means by editing the list — it can only supply a proof for
+    # each one. And a completion is refused while the objective still lags the ledger:
+    # a COMPLETE bound to entry 3 of 5 is a claim about a question nobody asked.
+    N="$(so_ledger_count "$FILE")"
+    K="$(so_bound "$FILE")"; [ -n "$K" ] || K=0
+    if [ "$K" != "$N" ]; then
+      deny "STATUS is COMPLETE but the objective is bound to ledger entry $K of $N — the interpreter has not caught up with everything the operator said, so this is a completion of a question nobody finished asking. Send another message, or set STATUS back to ACTIVE."
+    fi
+    IDS="$(so_done_ids "$FILE")"
+    [ -n "$(printf '%s' "$IDS" | tr -d '[:space:]')" ] \
+      || deny "STATUS is COMPLETE but DONE WHEN carries no D-items, so there is nothing to reproduce."
+    while IFS= read -r did; do
+      [ -n "$did" ] || continue
+      cond="$(so_proof_line "$FILE" "$did")"
+      [ -n "$cond" ] \
+        || deny "STATUS is COMPLETE but PROGRESS has no PROOFS line for $did. Every D-item in DONE WHEN needs one:  $did PROOF: <command> => exit <code>  or  $did PROOF: reply contains \"<phrase>\""
       if so_is_reply_proof "$cond"; then
         phrase="$(so_proof_reply_phrase "$cond")"
         if [ "${#phrase}" -lt "$SO_REPLY_PHRASE_MIN" ]; then
-          deny "STATUS is COMPLETE but this condition proves itself with a phrase of ${#phrase} characters, which proves nothing: $cond — quote at least $SO_REPLY_PHRASE_MIN characters."
+          deny "STATUS is COMPLETE but $did rests on a phrase of ${#phrase} characters, which proves nothing: $cond"
         fi
-        if [ -z "$LASTMSG" ]; then
-          deny "STATUS is COMPLETE but no final assistant message was available to check this condition against: $cond"
-        fi
+        [ -n "$LASTMSG" ] \
+          || deny "STATUS is COMPLETE but no final assistant message was available to check $did against: $cond"
         grep -qF -- "$phrase" <<< "$LASTMSG" \
-          || deny "STATUS is COMPLETE but your reply does not contain the phrase this condition promised: $cond — say it, in those words, or change the condition to what you actually delivered."
+          || deny "STATUS is COMPLETE but your reply does not contain the phrase $did promised: $cond — say it, in those words, or change the proof to what you actually delivered."
         continue
       fi
+      case "$cond" in *PROOF:*) ;; *) deny "STATUS is COMPLETE but $did's line carries no PROOF: $cond" ;; esac
       pcmd="$(printf '%s' "$cond" | sed -E 's/.*PROOF:[[:space:]]*//; s/[[:space:]]*=>[[:space:]]*exit[[:space:]]*[0-9]+[[:space:]]*$//')"
       pexp="$(printf '%s' "$cond" | sed -nE 's/.*=>[[:space:]]*exit[[:space:]]*([0-9]+)[[:space:]]*$/\1/p')"
-      [ -n "$pexp" ] || deny "STATUS is COMPLETE but this SUCCESS CONDITION does not end with '=> exit <code>', so there is no recorded exit code to reproduce: $cond"
+      [ -n "$pexp" ] || deny "STATUS is COMPLETE but $did does not end with '=> exit <code>', so there is no recorded exit code to reproduce: $cond"
       if so_proof_trivial "$pcmd"; then
-        deny "STATUS is COMPLETE but this condition's PROOF cannot fail, so it proves nothing: $cond — if the outcome IS your reply, write  PROOF: reply contains \"<a phrase of at least $SO_REPLY_PHRASE_MIN characters your answer contains>\""
+        deny "STATUS is COMPLETE but $did's proof cannot fail, so it proves nothing: $cond — if the outcome IS your reply, write  $did PROOF: reply contains \"<phrase>\""
       fi
       if so_proof_absence_is_unwitnessed "$pcmd" "$FILE"; then
-        deny "STATUS is COMPLETE but this condition is proved by the ABSENCE of a file that nothing in this objective says ever existed: $cond — never creating the file is not evidence. If the outcome IS your reply, write  PROOF: reply contains \"<phrase>\"."
+        deny "STATUS is COMPLETE but $did rests on the ABSENCE of a file that nothing in PROGRESS says ever existed: $cond — never creating the file is not evidence."
       fi
       if so_proof_destructive "$pcmd"; then
-        deny "STATUS is COMPLETE but this condition's PROOF is destructive and will not be re-run by a hook: $cond — replace it with a read-only command whose exit code reports the outcome."
+        deny "STATUS is COMPLETE but $did's proof is destructive and will not be re-run by a hook: $cond — replace it with a read-only command."
       fi
       so_run_bounded 60 "$pcmd" "$CWD"
       rc=$?
       if [ "$rc" = "124" ] || [ "$rc" = "137" ]; then
-        deny "STATUS is COMPLETE but this condition's PROOF did not finish within 60 seconds: $cond"
+        deny "STATUS is COMPLETE but $did's proof did not finish within 60 seconds: $cond"
       fi
       if [ "$rc" != "$pexp" ]; then
-        deny "STATUS is COMPLETE but this condition does not reproduce. Condition: $cond — re-run in $CWD it exited $rc, not $pexp. Fix the work or set STATUS back to ACTIVE; a recorded exit code that the machine will not reproduce is the agent grading itself."
+        deny "STATUS is COMPLETE but $did does not reproduce. $cond — re-run in $CWD it exited $rc, not $pexp. Fix the work or set STATUS back to ACTIVE."
       fi
-    done <<< "$CONDS"
-    printf 'session-objective: objective COMPLETE; every PROOF reproduced its recorded exit code.\n' >&2
+    done <<< "$IDS"
+    printf 'session-objective: objective COMPLETE; every D-item reproduced and the objective is bound to all %s ledger entries.\n' "$N" >&2
     exit 0
     ;;
   NEEDS-DECISION*)
@@ -248,4 +254,4 @@ if [ "$USED" -ge 3 ]; then
 fi
 printf '%s' "$((USED + 1))" > "$COUNTF" 2>/dev/null || true
 deny "the objective is ACTIVE, so this turn does not end. Next concrete action (FRONTIER): $FRONTIER
-When it is genuinely done, rewrite the objective with STATUS COMPLETE and a PROOF command per SUCCESS CONDITION — the hook re-runs them. If a decision is genuinely the operator's, set STATUS to NEEDS-DECISION: <one plain question> and ask that exact question in your reply."
+When it is genuinely done, set STATUS COMPLETE in PROGRESS with one PROOFS line per D-item in DONE WHEN — the hook re-runs them. If a background job is still running, set WAITING: <what>. If a decision is genuinely the operator's, set NEEDS-DECISION: <one plain question> and ask that exact question in your reply."

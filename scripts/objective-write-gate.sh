@@ -1,38 +1,35 @@
 #!/usr/bin/env bash
 # SO-ROLE: guard
-# objective-write-gate.sh — PreToolUse hook. Rule 1 (write before act) and Rule 2
-# (nothing the operator said disappears), plus the ledger-immutability protection.
+# objective-write-gate.sh — PreToolUse hook. In 2.0 it enforces one thing: WHO WRITES
+# WHAT.
 #
-# Order of decisions, and it matters:
-#   1. fleet switch off                      -> allow  (F11)
-#   2. anything targeting the objective home -> the protect guard decides (F9)
-#      - the sanctioned rewrite of THIS session's objective file -> Rule 2 validation.
-#        Claude Code spells that `Write` with file_path + content; Codex has no Write
-#        tool and spells it `apply_patch`, with the path inside the patch text. Both
-#        reach the SAME validation, on the content the runtime would actually leave
-#        on disk.
-#      - everything else under the home                        -> deny
-#   3. subagent event (agent_id present)     -> allow  (F10: inject only, no lock)
-#   4. permission_mode == plan               -> allow  (F6: the harness already blocks
-#                                                       Write, so a lock would wedge it)
-#   5. bound ledger entry != latest          -> deny every remaining tool  (Rule 1)
-#   6. otherwise                             -> allow
+#   LEDGER     the UserPromptSubmit hook, from genuine operator prompts only
+#   OBJECTIVE  the interpreter, from the ledger only
+#   PROGRESS   the agent
 #
-# FAILURE DIRECTION (audited 2026-09-12): FAILS CLOSED.
+# There is no write-before-act lock in 2.0 and nothing to force: the interpreter has
+# already run, inside the hook, before the agent saw the message. What is left is the
+# boundary — any write whose RESULT changes a byte of LEDGER or OBJECTIVE is denied, and
+# PROGRESS is judged on the content the runtime would actually leave on disk.
+#
+# Order of decisions:
+#   1. fleet switch off                        -> allow  (F11)
+#   2. Read of THIS session's objective file    -> explicit allow (it is the agent's own
+#      context, and the allow is explicit because the file sits outside the project and
+#      would otherwise wait on a permission prompt nobody is there to answer)
+#   3. a write to that file (Write, Edit, apply_patch) -> validated, then allowed
+#   4. anything else under the objective home   -> deny
+#   5. Bash naming the objective home           -> deny (whole command string)
+#   6. everything else                          -> allow
+#
+# FAILURE DIRECTION (audited 2026-09-13): FAILS CLOSED.
 #   jq missing                    -> exit 2 (F13) with the install command
 #   stdin not a JSON object       -> exit 2
 #   no session_id                 -> exit 2
-#   objective file absent         -> exit 0 (the hook was installed mid-session; the
-#                                    next operator message creates the file)
-#   objective file unparseable    -> DENY (a file whose binding cannot be read is a
-#                                    lock that cannot be released; it is never an allow)
-#   proposed write unparseable    -> DENY
-#   apply_patch unparseable, or
-#     its result cannot be computed -> DENY (never judge content the runtime will not
-#                                     write; that is the fail-open shape)
+#   objective file absent         -> exit 0 (installed mid-session; the next message
+#                                    creates it)
+#   proposed result unreadable    -> DENY (never judge content the runtime will not write)
 #   SESSION_OBJECTIVE=off         -> exit 0 with one visible line (F11)
-# Deny is the PreToolUse JSON shape on stdout plus exit 0; exit 2 is reserved for
-# "this hook could not evaluate anything at all".
 set -uo pipefail
 
 # FAIL-CLOSED INPUT VALIDATION — see lib.
@@ -45,271 +42,162 @@ so_read_payload
 
 TOOL="$(so_field tool_name)"
 CWD="$(so_field cwd)"; [ -n "$CWD" ] || CWD="$PWD"
-AGENT="$(so_field agent_id)"
-MODE="$(so_field permission_mode)"
 FILE="$(so_file)"
 HOMEDIR="$(so_realpath "$(so_home)")"
 RFILE="$(so_realpath "$FILE")"
 
-# The one sanctioned way to rewrite the objective, in THIS runtime. Codex exposes no
-# Write tool, so naming `Write` at it would be an instruction it cannot follow and the
-# lock would never release.
 if [ "$(so_runtime)" = "codex" ]; then
-  HOWTO="apply_patch, carrying exactly one file operation, on exactly this path: $FILE (an Add File or an Update File hunk; no Move to, no Delete File, and no second file in the same patch)"
-  # Codex has no Read tool, so its permitted set is the patch alone.
-  PERMITTED="$HOWTO"
+  HOWTO="apply_patch, carrying exactly one file operation, on exactly this path: $FILE"
 else
-  HOWTO="Write, with file_path=$FILE"
-  PERMITTED="Read of $FILE (allowed so the read-before-write check can be satisfied), then Write, with file_path=$FILE — or Edit on that same path, which is cheaper on a long objective"
+  HOWTO="the Write tool, or Edit, on exactly this path: $FILE"
 fi
 
+under_home() { case "$1" in "$HOMEDIR"|"$HOMEDIR"/*) return 0 ;; esac; return 1; }
+
 # ---------------------------------------------------------------------------
-# The sanctioned rewrite: Rule 2, the word cap, F1 and ledger immutability, run on
-# the content the runtime would actually leave on disk. Called by the Write branch
-# and by the apply_patch branch; it never returns on a refusal.
+# The only thing the agent may change: the PROGRESS layer.
 # ---------------------------------------------------------------------------
-validate_proposal() { # <file holding the proposed objective>
-  local NEW="$1"
-  # jq treats "" as truthy, so `.content // empty` yields a one-byte line for an
-  # empty write. Test the content, not the file size.
+validate_progress() { # <file holding the proposed whole file>
+  local NEW="$1" cond pcmd phrase
+
   if [ ! -s "$NEW" ] || [ -z "$(tr -d '[:space:]' < "$NEW")" ]; then
-    so_deny_pretooluse "session-objective: the proposed objective file is empty. Write the whole file: the OPERATOR LEDGER layer byte-for-byte unchanged, then the OBJECTIVE layer."
+    so_deny_pretooluse "session-objective: the proposed file is empty. Write the whole file: the OPERATOR LEDGER and OBJECTIVE layers byte-for-byte unchanged, then your PROGRESS layer."
   fi
-  if [ -z "$(so_objective_heading "$NEW")" ]; then
-    so_deny_pretooluse "session-objective: the proposed file has no '# OBJECTIVE (agent-written, rewritten every turn, revision N, bound to ledger entry K)' heading. Without it the binding cannot be read and the lock can never release."
+  if [ -z "$(so_progress_heading "$NEW")" ]; then
+    so_deny_pretooluse "session-objective: the proposed file has no '$SO_PROGRESS_HEAD' heading. PROGRESS is the layer you own; it has to be there."
   fi
-
-  OLD_LEDGER="$(so_ledger_layer "$FILE")"
-  NEW_LEDGER="$(so_ledger_layer "$NEW")"
-  if [ "$OLD_LEDGER" != "$NEW_LEDGER" ]; then
-    so_deny_pretooluse "session-objective: the OPERATOR LEDGER layer changed. It is append-only and hook-written; the agent may not edit it. Reproduce it byte-for-byte and change only the OBJECTIVE layer below the '# OBJECTIVE (...)' heading."
+  if [ "$(so_ledger_layer "$FILE")" != "$(so_ledger_layer "$NEW")" ]; then
+    so_deny_pretooluse "session-objective: the OPERATOR LEDGER layer changed. It holds what the operator typed, verbatim, and only the hook appends to it. Reproduce it byte-for-byte."
   fi
-
-  COUNT="$(so_ledger_count "$FILE")"
-  OLD_BOUND="$(so_bound "$FILE")"; [ -n "$OLD_BOUND" ] || OLD_BOUND=0
-  NEW_BOUND="$(so_bound "$NEW")"
-  if [ -z "$NEW_BOUND" ]; then
-    so_deny_pretooluse "session-objective: the proposed heading does not state 'bound to ledger entry <number>'. There are $COUNT ledger entries; bind to $COUNT."
-  fi
-  if [ "$NEW_BOUND" -gt "$COUNT" ]; then
-    so_deny_pretooluse "session-objective: the proposed objective binds to ledger entry $NEW_BOUND but only $COUNT entries exist. Bind to $COUNT."
-  fi
-  if [ "$NEW_BOUND" -lt "$OLD_BOUND" ]; then
-    so_deny_pretooluse "session-objective: the binding went backwards ($OLD_BOUND -> $NEW_BOUND). Bind to $COUNT."
-  fi
-  # F1 — the lock is released by ADVANCING the binding, never by rewriting the same
-  # text under the same number. Semantic quality of the rewrite is not mechanically
-  # decidable; an identical body under an advanced binding is allowed on purpose.
-  if [ "$OLD_BOUND" -lt "$COUNT" ] && [ "$NEW_BOUND" -le "$OLD_BOUND" ]; then
-    so_deny_pretooluse "session-objective: the objective is locked to ledger entry $OLD_BOUND and there are $COUNT entries. The binding must ADVANCE: set 'bound to ledger entry $COUNT' in the heading and rewrite the OBJECTIVE layer to reflect every entry, including entry $COUNT."
+  if [ "$(so_objective_heading "$FILE")$(so_objective_layer "$FILE")" != "$(so_objective_heading "$NEW")$(so_objective_layer "$NEW")" ]; then
+    so_deny_pretooluse "session-objective: the OBJECTIVE layer changed. It is not yours: it is written from the operator's own messages by a call that has never seen this session, and an agent editing it is the whole defect 2.0 exists to close. If it is wrong, say so in your reply — his next message rewrites it. Reproduce it byte-for-byte and change only PROGRESS."
   fi
 
-  WORDS="$(so_objective_layer "$NEW" | wc -w | tr -d ' ')"
-  if [ "$WORDS" -gt 1800 ]; then
-    so_deny_pretooluse "session-objective: the OBJECTIVE layer is $WORDS words; the cap is 1,800. Cut CURRENT REALITY and FAILED APPROACHES first; CONSTRAINTS and REJECTED INTERPRETATIONS may only shrink through a SUPERSEDED line."
+  local WORDS; WORDS="$(so_progress_layer "$NEW" | wc -w | tr -d ' ')"
+  if [ "$WORDS" -gt 300 ]; then
+    so_deny_pretooluse "session-objective: PROGRESS is $WORDS words; the cap is 300. CURRENT REALITY is capped at 80 words and FRONTIER is one line. Long content belongs in a plan or spec file that the objective points at."
+  fi
+  local CRW; CRW="$(so_prog_section "$NEW" "CURRENT REALITY" | wc -w | tr -d ' ')"
+  if [ "$CRW" -gt 80 ]; then
+    so_deny_pretooluse "session-objective: CURRENT REALITY is $CRW words; the cap is 80. It says what is true now, not what you did."
   fi
 
-  # Rule 2 — nothing the operator said disappears.
-  NEWTEXT="$(so_objective_layer "$NEW")"
-  for SEC in CONSTRAINTS "REJECTED INTERPRETATIONS"; do
-    while IFS= read -r line; do
-      [ -n "$line" ] || continue
-      case "$line" in SUPERSEDED\ *) continue ;; esac
-      if grep -qxF -- "$line" <<< "$(printf '%s\n' "$NEWTEXT" | sed -E 's/^[[:space:]]*[-*][[:space:]]+//' | sed -E 's/^[[:space:]]*//; s/[[:space:]]*$//')"; then
-        continue
-      fi
-      if grep -qE "^SUPERSEDED [0-9]{4}-[0-9]{2}-[0-9]{2} by ledger entry [0-9]+: $(printf '%s' "$line" | sed -E 's/[][\\.^$*+?(){}|\/]/\\&/g')$" \
-           <<< "$(printf '%s\n' "$NEWTEXT" | sed -E 's/^[[:space:]]*[-*][[:space:]]+//' | sed -E 's/^[[:space:]]*//; s/[[:space:]]*$//')"; then
-        continue
-      fi
-      so_deny_pretooluse "session-objective: this line under $SEC would disappear from the objective, and nothing the operator said disappears silently. Missing line: $line — restore it, or record: SUPERSEDED $(so_today) by ledger entry <K>: $line"
-    done <<< "$(so_entries "$FILE" "$SEC")"
-  done
-
-  # F3 — a PROOF that cannot fail proves nothing.
+  # Every proof line is judged the moment it is recorded, not only when it is consumed.
   while IFS= read -r cond; do
     [ -n "$cond" ] || continue
     case "$cond" in *PROOF:*) ;; *) continue ;; esac
-    # The reply form, for an outcome whose evidence IS the reply.
     if so_is_reply_proof "$cond"; then
       phrase="$(so_proof_reply_phrase "$cond")"
       if [ "${#phrase}" -lt "$SO_REPLY_PHRASE_MIN" ]; then
-        so_deny_pretooluse "session-objective: this SUCCESS CONDITION proves itself with a phrase of ${#phrase} characters, which is as easy to hit by accident as \`true\` is: $cond — quote at least $SO_REPLY_PHRASE_MIN characters of the answer you are actually going to give."
+        so_deny_pretooluse "session-objective: this proof rests on a phrase of ${#phrase} characters, which is as easy to hit by accident as \`true\` is: $cond — quote at least $SO_REPLY_PHRASE_MIN characters of the answer you are actually going to give."
       fi
       continue
     fi
     pcmd="$(printf '%s' "$cond" | sed -E 's/.*PROOF:[[:space:]]*//; s/[[:space:]]*=>[[:space:]]*exit[[:space:]]*[0-9]+[[:space:]]*$//')"
     if so_proof_trivial "$pcmd"; then
-      so_deny_pretooluse "session-objective: this SUCCESS CONDITION carries a PROOF that cannot fail, so it proves nothing: $cond — give it a command whose exit code actually depends on the outcome, or, if the outcome IS your reply, write  PROOF: reply contains \"<a phrase of at least $SO_REPLY_PHRASE_MIN characters your answer will contain>\""
+      so_deny_pretooluse "session-objective: this proof cannot fail, so it proves nothing: $cond — give it a command whose exit code depends on the outcome, or, if the outcome IS your reply, write  PROOF: reply contains \"<a phrase of at least $SO_REPLY_PHRASE_MIN characters>\""
     fi
     if so_proof_absence_is_unwitnessed "$pcmd" "$NEW"; then
-      so_deny_pretooluse "session-objective: this SUCCESS CONDITION proves an outcome by the ABSENCE of a file that nothing in this objective says ever existed: $cond — the easiest way to pass it is never to create the file, which is not evidence of anything. If the absence is real work (something was removed), name the path in CURRENT REALITY or FAILED APPROACHES. If the outcome IS your reply, write  PROOF: reply contains \"<phrase>\"."
+      so_deny_pretooluse "session-objective: this proof rests on the ABSENCE of a file that nothing in PROGRESS says ever existed: $cond — never creating the file is not evidence. If the absence is real work, name the path in CURRENT REALITY. If the outcome IS your reply, write  PROOF: reply contains \"<phrase>\"."
     fi
-  done <<< "$(so_entries "$NEW" "SUCCESS CONDITIONS")"
+  done <<< "$(so_prog_entries "$NEW" PROOFS)"
   return 0
 }
 
 # ---------------------------------------------------------------------------
-# 2. The protect guard (F9). Every file-tool target is resolved to a real path
-#    before it is compared, and every Bash command is scanned for the home path.
-# ---------------------------------------------------------------------------
-under_home() { # <resolved-path>
-  case "$1" in "$HOMEDIR"|"$HOMEDIR"/*) return 0 ;; esac
-  return 1
-}
-
 case "$TOOL" in
   Read)
-    # REPAIR, MEASURED 2026-09-12: outside bypassPermissions the harness refuses a
-    # Write to a file it has not read this session ("File has not been read yet"),
-    # and the lock denied the Read that would clear it. The one permitted tool was
-    # unusable and the only tool that could unlock it was denied: 4 of 4 real runs
-    # in `default` and `acceptEdits` wedged on message one. Rule 1's exception is
-    # therefore BOTH a Read and a Write whose target is exactly this session's
-    # objective path. Reading the file the hook just injected grants nothing; it is
-    # the write that is gated, and it still is.
     TGT="$(jq -r '.tool_input.file_path // empty' <<< "$SO_PAYLOAD")"
     if [ -n "$TGT" ]; then
       RTGT="$(so_realpath "$TGT" "$CWD")"
       if [ "$RTGT" = "$RFILE" ]; then
-        so_allow_pretooluse "session-objective: reading this session's own objective file is always permitted — the hook wrote it and has already injected it into this context."
+        so_allow_pretooluse "session-objective: reading this session's own objective file is always permitted."
       fi
       if under_home "$RTGT"; then
         so_deny_pretooluse "session-objective: Read on $TGT is denied. Another session's objective file is not this session's business. This session's file is $FILE."
       fi
     fi
-    RTGT=""
     ;;
-  Write|Edit|MultiEdit|NotebookEdit)
-    TGT="$(jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' <<< "$SO_PAYLOAD")"
-    if [ -n "$TGT" ]; then
-      RTGT="$(so_realpath "$TGT" "$CWD")"
-      if under_home "$RTGT"; then
-        if [ "$RTGT" = "$RFILE" ] && [ "$TOOL" = "Write" ]; then
-          : # falls through to the Rule 2 validation below
-        elif [ "$RTGT" = "$RFILE" ] && [ "$TOOL" = "Edit" ]; then
-          # D4, measured 2026-09-13: the objective reached 11 KB and every rewrite was
-          # a full Write, because Edit was refused outright. The refusal was never
-          # about Edit — it was about judging content the runtime would actually leave
-          # on disk. So the edit is applied to a COPY and that copy goes through the
-          # same validation as a Write. `replace_all` is refused: an edit whose reach
-          # is not exactly one place is not one an operator-protection rule can judge.
-          [ -f "$FILE" ] || exit 0
-          if [ "$(jq -r '.tool_input.replace_all // false' <<< "$SO_PAYLOAD")" = "true" ]; then
-            so_deny_pretooluse "session-objective: an Edit with replace_all on $FILE is denied — a replacement that lands in an unknown number of places cannot be checked against the operator's own lines. Edit one exact, unique piece of text, or rewrite the whole file with $HOWTO."
-          fi
-          NEW="$(mktemp "${TMPDIR:-/tmp}/so-proposed.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
-          OLDF="$(mktemp "${TMPDIR:-/tmp}/so-old.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
-          NEWF="$(mktemp "${TMPDIR:-/tmp}/so-new.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
-          trap 'rm -f "$NEW" "$OLDF" "$NEWF"' EXIT
-          # -j, not -r: a trailing newline in old_string is load-bearing (it is how a
-          # whole line is removed) and must survive intact.
-          jq -j '.tool_input.old_string // ""' <<< "$SO_PAYLOAD" > "$OLDF"
-          jq -j '.tool_input.new_string // ""' <<< "$SO_PAYLOAD" > "$NEWF"
-          so_apply_edit_to_copy "$FILE" "$OLDF" "$NEWF" "$NEW"
-          case "$?" in
-            0) ;;
-            3) so_deny_pretooluse "session-objective: this Edit on $FILE carries an empty old_string, so what it would leave on disk cannot be computed." ;;
-            4) so_deny_pretooluse "session-objective: this Edit's old_string does not appear in $FILE. The hook may have appended to the ledger since you last read it — Read the file again, then Edit." ;;
-            5) so_deny_pretooluse "session-objective: this Edit's old_string appears more than once in $FILE, so which occurrence it would change is undecidable. Include enough surrounding text to make it unique." ;;
-            *) so_deny_pretooluse "session-objective: this Edit on $FILE could not be applied to a copy, so what it would write cannot be checked." ;;
-          esac
-          validate_proposal "$NEW"
-          so_allow_pretooluse "session-objective: this edit changes only this session's own objective file, and the file it would leave on disk passed every check."
-        else
-          so_deny_pretooluse "session-objective: $TOOL on $TGT is denied. The objective home ($(so_home)) is hook-written. This session's objective file is $FILE and the ONLY sanctioned change to it is $HOWTO, rewriting the whole file with the OPERATOR LEDGER layer byte-for-byte unchanged."
-        fi
-      else
-        RTGT=""
-      fi
+  Write|Edit)
+    TGT="$(jq -r '.tool_input.file_path // empty' <<< "$SO_PAYLOAD")"
+    [ -n "$TGT" ] || exit 0
+    RTGT="$(so_realpath "$TGT" "$CWD")"
+    under_home "$RTGT" || exit 0
+    if [ "$RTGT" != "$RFILE" ]; then
+      so_deny_pretooluse "session-objective: $TOOL on $TGT is denied. The objective home ($(so_home)) is hook-written except for this session's own PROGRESS layer, at $FILE."
+    fi
+    [ -f "$FILE" ] || exit 0
+    NEW="$(mktemp "${TMPDIR:-/tmp}/so-proposed.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
+    if [ "$TOOL" = "Write" ]; then
+      trap 'rm -f "$NEW"' EXIT
+      jq -r '.tool_input.content // empty' <<< "$SO_PAYLOAD" > "$NEW"
     else
-      RTGT=""
+      OLDF="$(mktemp "${TMPDIR:-/tmp}/so-old.XXXXXX")"; NEWF="$(mktemp "${TMPDIR:-/tmp}/so-new.XXXXXX")"
+      trap 'rm -f "$NEW" "$OLDF" "$NEWF"' EXIT
+      if [ "$(jq -r '.tool_input.replace_all // false' <<< "$SO_PAYLOAD")" = "true" ]; then
+        so_deny_pretooluse "session-objective: an Edit with replace_all on $FILE is denied — a replacement landing in an unknown number of places cannot be checked against the layers you may not touch. Edit one exact, unique piece of text."
+      fi
+      jq -j '.tool_input.old_string // ""' <<< "$SO_PAYLOAD" > "$OLDF"
+      jq -j '.tool_input.new_string // ""' <<< "$SO_PAYLOAD" > "$NEWF"
+      so_apply_edit_to_copy "$FILE" "$OLDF" "$NEWF" "$NEW"
+      case "$?" in
+        0) ;;
+        3) so_deny_pretooluse "session-objective: this Edit carries an empty old_string, so what it would leave on disk cannot be computed." ;;
+        4) so_deny_pretooluse "session-objective: this Edit's old_string does not appear in $FILE. The hook may have rewritten the objective since you last read it — Read the file again, then Edit." ;;
+        5) so_deny_pretooluse "session-objective: this Edit's old_string appears more than once in $FILE, so which occurrence it would change is undecidable. Include enough surrounding text to make it unique." ;;
+        *) so_deny_pretooluse "session-objective: this Edit could not be applied to a copy, so what it would write cannot be checked." ;;
+      esac
+    fi
+    validate_progress "$NEW"
+    so_allow_pretooluse "session-objective: this changes only this session's PROGRESS layer, and the file it would leave on disk passed every check."
+    ;;
+  MultiEdit|NotebookEdit)
+    TGT="$(jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' <<< "$SO_PAYLOAD")"
+    if [ -n "$TGT" ] && under_home "$(so_realpath "$TGT" "$CWD")"; then
+      so_deny_pretooluse "session-objective: $TOOL on $TGT is denied — a multi-part edit cannot be applied to a copy and checked as one result. Use $HOWTO."
     fi
     ;;
   apply_patch)
-    # Codex's only file-writing tool. The target path lives inside the patch text, so
-    # the guard reads it there rather than declaring the payload unreadable.
     PATCHTEXT="$(jq -r '.tool_input.command // empty' <<< "$SO_PAYLOAD")"
     TOUCHES_HOME=0
     while IFS= read -r t; do
       [ -n "$t" ] || continue
       under_home "$(so_realpath "$t" "$CWD")" && TOUCHES_HOME=1
     done <<< "$(so_patch_targets "$PATCHTEXT")"
-    # A patch the parser could not read, that still NAMES the home, is refused: an
-    # unreadable patch is never an allow.
     if [ "$TOUCHES_HOME" = "0" ] \
        && { grep -qF -- "$(so_home)" <<< "$PATCHTEXT" || grep -qF -- "$HOMEDIR" <<< "$PATCHTEXT"; }; then
-      so_deny_pretooluse "session-objective: this apply_patch names the objective home ($(so_home)) but its file operations could not be read, so what it would write cannot be judged. The only sanctioned rewrite is $HOWTO."
+      so_deny_pretooluse "session-objective: this apply_patch names the objective home ($(so_home)) but its file operations could not be read, so what it would write cannot be judged. The sanctioned form is $HOWTO."
     fi
     if [ "$TOUCHES_HOME" = "1" ]; then
       NOPS="$(so_patch_ops "$PATCHTEXT" | grep -c . || true)"
       OP1="$(so_patch_ops "$PATCHTEXT" | head -1)"
       TGT1="$(so_realpath "$(so_patch_targets "$PATCHTEXT" | head -1)" "$CWD")"
       if [ "${NOPS:-0}" != "1" ] || [ "$TGT1" != "$RFILE" ]; then
-        so_deny_pretooluse "session-objective: this apply_patch touches the objective home ($(so_home)) and is denied. A patch that reaches this session's objective file must carry exactly ONE file operation, on exactly $FILE, and nothing else. Split the rest of the patch into its own call. The sanctioned form is $HOWTO."
+        so_deny_pretooluse "session-objective: this apply_patch touches the objective home and is denied. A patch reaching this session's file must carry exactly ONE file operation, on exactly $FILE, and nothing else."
       fi
       case "$OP1" in
         Add|Update) ;;
-        *) so_deny_pretooluse "session-objective: this apply_patch would $OP1 $FILE. The objective file is never deleted or moved; it is rewritten in place. The sanctioned form is $HOWTO." ;;
+        *) so_deny_pretooluse "session-objective: this apply_patch would $OP1 $FILE. The file is never deleted or moved; PROGRESS is rewritten in place." ;;
       esac
-      if [ ! -f "$FILE" ]; then exit 0; fi
+      [ -f "$FILE" ] || exit 0
       NEW="$(mktemp "${TMPDIR:-/tmp}/so-proposed.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
       trap 'rm -f "$NEW"' EXIT
       if ! WHY="$(so_apply_patch_to_copy "$PATCHTEXT" "$FILE" "$NEW" 2>&1)"; then
-        so_deny_pretooluse "session-objective: this apply_patch cannot be evaluated, so what it would leave on disk cannot be checked and it is refused — $WHY. Re-send it as $HOWTO."
+        so_deny_pretooluse "session-objective: this apply_patch cannot be evaluated, so what it would leave on disk cannot be checked and it is refused — $WHY."
       fi
-      validate_proposal "$NEW"
-      so_allow_pretooluse "session-objective: this patch rewrites this session's own objective file and nothing else, and the file it would leave on disk passed every check."
+      validate_progress "$NEW"
+      so_allow_pretooluse "session-objective: this patch changes only this session's PROGRESS layer, and the file it would leave on disk passed every check."
     fi
-    RTGT=""
     ;;
   Bash)
     CMD="$(jq -r '.tool_input.command // empty' <<< "$SO_PAYLOAD")"
-    # THE WHOLE COMMAND, not a line of it. `grep` is line-based, and a Bash command is
-    # routinely several lines: a first line that looked harmless and a second line that
-    # wrote to the ledger slipped past a line-anchored test, and because this branch
-    # could ALLOW, it also slipped past the write-before-act lock. Both holes came from
-    # the same two things — a per-line match, and a name-based allowance — so both are
-    # gone. `case` matches the entire string, newlines included, and this branch can now
-    # only DENY or fall through to the lock. There is no allowance of any kind here: no
-    # script name, no path, no shape.
+    # The WHOLE command, newlines included: grep is line-based, and a first line that
+    # looked harmless once hid a ledger append on its second. This branch can only
+    # refuse or stand aside; it never grants, and nothing is allowed by name.
     case "$CMD" in
       *"$(so_home)"*|*"$HOMEDIR"*|*"$FILE"*|*"$RFILE"*)
-        so_deny_pretooluse "session-objective: this Bash command names the objective home ($(so_home)) and is denied — every character of the command was read, not just its first line. The OPERATOR LEDGER layer is append-only and hook-written: the only thing that ever appends to it is the operator typing a message. The OBJECTIVE layer is changed only by $HOWTO. To read this session's objective, use the Read tool on $FILE, which is permitted. Command refused: $CMD" ;;
+        so_deny_pretooluse "session-objective: this Bash command names the objective home ($(so_home)) and is denied — every character of the command was read, not just its first line. To read the file, use the Read tool on $FILE, which is permitted. To change PROGRESS, use $HOWTO. Command refused: $CMD" ;;
     esac
-    RTGT=""
     ;;
-  *) RTGT="" ;;
 esac
-
-# ---------------------------------------------------------------------------
-# The sanctioned Write: Rule 2, the word cap, F1 and ledger immutability.
-# ---------------------------------------------------------------------------
-if [ -n "${RTGT:-}" ] && [ "$RTGT" = "$RFILE" ]; then
-  [ -f "$FILE" ] || exit 0   # first write of a brand-new file: nothing to diff
-  NEW="$(mktemp "${TMPDIR:-/tmp}/so-proposed.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
-  trap 'rm -f "$NEW"' EXIT
-  jq -r '.tool_input.content // empty' <<< "$SO_PAYLOAD" > "$NEW"
-  validate_proposal "$NEW"
-  so_allow_pretooluse "session-objective: this is the sanctioned rewrite of this session's own objective file, and it passed every check."
-fi
-
-# ---------------------------------------------------------------------------
-# 3/4. Subagents and plan mode: inject only, never lock.
-# ---------------------------------------------------------------------------
-[ -n "$AGENT" ] && exit 0     # F10
-[ "$MODE" = "plan" ] && exit 0 # F6
-
-# ---------------------------------------------------------------------------
-# 5. Rule 1 — write before act.
-# ---------------------------------------------------------------------------
-[ -f "$FILE" ] || exit 0      # hook installed mid-session; the next message creates it
-COUNT="$(so_ledger_count "$FILE")"
-BOUND="$(so_bound "$FILE")"
-if [ -z "$BOUND" ]; then
-  so_deny_pretooluse "session-objective: $FILE has no readable 'bound to ledger entry <number>' heading, so the write-before-act lock cannot release. Rewrite the whole file with $HOWTO, heading: # OBJECTIVE (agent-written, rewritten every turn, revision 1, bound to ledger entry $COUNT)"
-fi
-if [ "$BOUND" != "$COUNT" ]; then
-  so_deny_pretooluse "session-objective: $TOOL is denied — the objective is bound to ledger entry $BOUND and the operator's latest message is entry $COUNT. Rewrite the objective FIRST, then work. The only tool calls permitted right now: $PERMITTED — rewriting the whole file, OPERATOR LEDGER layer unchanged, heading bound to ledger entry $COUNT. No other tool, no shell heredoc, no Edit."
-fi
 exit 0

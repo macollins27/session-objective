@@ -39,10 +39,15 @@ fi
 
 cat <<EOF
 ═══ SESSION OBJECTIVE (restored on ${SOURCE:-startup}; file: $FILE) ═══
-$(cat "$FILE")
+ledger: $(so_ledger_count "$FILE") entries, last at $(so_ledger_last_ts "$FILE")
+
+$(so_objective_heading "$FILE")
+$(so_objective_layer "$FILE")
+$(so_progress_heading "$FILE")
+$(so_progress_layer "$FILE")
 ═══════════════════════════════════════
-This is the live objective for this session. It is bound to ledger entry $(so_bound "$FILE") of $(so_ledger_count "$FILE").
-The OPERATOR LEDGER layer is hook-written and append-only. The OBJECTIVE layer is
-yours to rewrite, using $(so_write_instruction "$FILE").
+The OBJECTIVE above is written from the operator's own messages by a call that has never
+seen this session; you may not edit a byte of it or of the ledger. PROGRESS is yours,
+via $(so_write_instruction "$FILE") or an Edit on that same path.
 EOF
 exit 0

@@ -89,20 +89,30 @@ so_file() {
 # File parsing
 # ---------------------------------------------------------------------------
 SO_LEDGER_HEAD='# OPERATOR LEDGER (hook-written, append-only, agent may not edit)'
-SO_SECTIONS='DESIRED OUTCOME|SUCCESS CONDITIONS|CONSTRAINTS|REJECTED INTERPRETATIONS|FAILED APPROACHES|CURRENT REALITY|FRONTIER|STATUS'
+SO_PROGRESS_HEAD='# PROGRESS (agent-written)'
+# Order matters: MUST NOT is tested before MUST, or a "MUST NOT" heading reads as a
+# "MUST" heading with an inline value of "NOT".
+SO_OBJ_SECTIONS='OUTCOME|MUST NOT|MUST|DONE WHEN|OPEN QUESTION'
+SO_PROG_SECTIONS='PROOFS|CURRENT REALITY|FRONTIER|IN FLIGHT|STATUS'
 
-# Everything up to, but not including, the OBJECTIVE heading.
+# Three layers in 2.0, one writer each:
+#   LEDGER    the hook, from genuine operator prompts only
+#   OBJECTIVE the interpreter, from the ledger only
+#   PROGRESS  the agent
 so_ledger_layer() { # <file>
   awk '/^# OBJECTIVE \(/ { exit } { print }' "$1" 2>/dev/null || true
 }
-
-# Everything after the OBJECTIVE heading.
-so_objective_layer() { # <file>
-  awk 'f { print } /^# OBJECTIVE \(/ { f = 1 }' "$1" 2>/dev/null || true
+so_objective_layer() { # <file>  (body only, heading excluded)
+  awk '/^# PROGRESS \(/ { exit } f { print } /^# OBJECTIVE \(/ { f = 1 }' "$1" 2>/dev/null || true
 }
-
+so_progress_layer() { # <file>  (body only, heading excluded)
+  awk 'f { print } /^# PROGRESS \(/ { f = 1 }' "$1" 2>/dev/null || true
+}
 so_objective_heading() { # <file>
   grep -m1 -E '^# OBJECTIVE \(' "$1" 2>/dev/null || true
+}
+so_progress_heading() { # <file>
+  grep -m1 -E '^# PROGRESS \(' "$1" 2>/dev/null || true
 }
 
 so_ledger_count() { # <file>
@@ -110,19 +120,22 @@ so_ledger_count() { # <file>
   n="$(so_ledger_layer "$1" | grep -cE '^- [0-9]{4}-[0-9]{2}-[0-9]{2}T' || true)"
   printf '%s' "${n:-0}"
 }
-
-so_bound() { # <file>  -> the K in "bound to ledger entry K", or empty if unparseable
-  so_objective_heading "$1" | sed -nE 's/.*bound to ledger entry ([0-9]+).*/\1/p' | head -1
+so_ledger_last_ts() { # <file>
+  so_ledger_layer "$1" | grep -E '^- [0-9]{4}-[0-9]{2}-[0-9]{2}T' | tail -1 \
+    | sed -E 's/^- ([0-9T:Z-]+) .*/\1/' || true
 }
 
+so_bound() { # <file>  -> the K in "bound to ledger entry K"
+  so_objective_heading "$1" | sed -nE 's/.*bound to ledger entry ([0-9]+).*/\1/p' | head -1
+}
 so_revision() { # <file>
   so_objective_heading "$1" | sed -nE 's/.*revision ([0-9]+).*/\1/p' | head -1
 }
 
-# Body of one OBJECTIVE section, in file order. An inline value on the heading line
-# ("STATUS ACTIVE", "STATUS: ACTIVE") is emitted as the section's first line.
-so_section() { # <file> <SECTION NAME>
-  so_objective_layer "$1" | awk -v want="$2" -v names="$SO_SECTIONS" '
+# Body of one section of a given layer. An inline value on the heading line is
+# emitted as the section's first line.
+so_section_of() { # <layer text> <section-name list> <wanted section>
+  printf '%s\n' "$1" | awk -v want="$3" -v names="$2" '
     BEGIN { n = split(names, H, "|") }
     function head(line,   i, nm, rest) {
       for (i = 1; i <= n; i++) {
@@ -144,19 +157,28 @@ so_section() { # <file> <SECTION NAME>
     }'
 }
 
+so_obj_section() {  so_section_of "$(so_objective_layer "$1")" "$SO_OBJ_SECTIONS"  "$2"; }
+so_prog_section() { so_section_of "$(so_progress_layer  "$1")" "$SO_PROG_SECTIONS" "$2"; }
+
 so_trim() { sed -E 's/^[[:space:]]*//; s/[[:space:]]*$//' ; }
 
-# A section entry stripped of its bullet, for comparison.
-so_entries() { # <file> <SECTION NAME>
-  so_section "$1" "$2" | sed -E 's/^[[:space:]]*[-*][[:space:]]+//' | so_trim | grep -v '^$' || true
+so_entries_of() { # <layer text> <names> <section>
+  so_section_of "$1" "$2" "$3" | sed -E 's/^[[:space:]]*[-*][[:space:]]+//' | so_trim | grep -v '^$' || true
 }
+so_obj_entries()  { so_entries_of "$(so_objective_layer "$1")" "$SO_OBJ_SECTIONS"  "$2"; }
+so_prog_entries() { so_entries_of "$(so_progress_layer  "$1")" "$SO_PROG_SECTIONS" "$2"; }
 
-so_status() { # <file> -> ACTIVE | NEEDS-DECISION: ... | COMPLETE | empty
-  so_section "$1" STATUS | so_trim | grep -v '^$' | head -1 || true
+# STATUS and FRONTIER live in PROGRESS in 2.0.
+so_status() {   so_prog_section "$1" STATUS   | so_trim | grep -v '^$' | head -1 || true; }
+so_frontier() { so_prog_section "$1" FRONTIER | so_trim | grep -v '^$' | head -5 || true; }
+
+# The D-items the interpreter declared, as bare ids (D1, D2 ...).
+so_done_ids() { # <file>
+  so_obj_section "$1" "DONE WHEN" | sed -nE 's/^[[:space:]]*(D[0-9]+)([[:space:]].*)?$/\1/p' || true
 }
-
-so_frontier() { # <file>
-  so_section "$1" FRONTIER | so_trim | grep -v '^$' | head -5 || true
+# The PROGRESS proof line for one D-item, if any.
+so_proof_line() { # <file> <Dn>
+  so_prog_section "$1" PROOFS | grep -E "^[[:space:]]*$2[[:space:]]" | head -1 || true
 }
 
 # ---------------------------------------------------------------------------
@@ -186,28 +208,6 @@ so_allow_pretooluse() { # <reason...>
 so_now() { date -u +%Y-%m-%dT%H:%MZ; }
 so_today() { date -u +%Y-%m-%d; }
 
-# The empty objective template written for a brand-new session.
-so_template() {
-  cat <<'TPL'
-# OBJECTIVE (agent-written, rewritten every turn, revision 0, bound to ledger entry 0)
-DESIRED OUTCOME
-
-SUCCESS CONDITIONS
-
-CONSTRAINTS
-
-REJECTED INTERPRETATIONS
-
-FAILED APPROACHES
-
-CURRENT REALITY
-
-FRONTIER
-
-STATUS
-ACTIVE
-TPL
-}
 
 # ---------------------------------------------------------------------------
 # Path resolution (F9)
@@ -323,7 +323,7 @@ so_is_reply_proof() { # <success-condition line>
 
 # A negative-existence proof — `test ! -e X`, `[ ! -f X ]` — passes whenever X is
 # absent, and the easiest way to make X absent is never to create it. It is admitted
-# only when the same objective's CURRENT REALITY or FAILED APPROACHES names X, which is
+# only when the same file's PROGRESS CURRENT REALITY names X, which is
 # the case where the absence is a real claim about work done ("the old file was
 # removed") rather than a claim about a file nobody ever made.
 so_proof_negative_existence_path() { # <command> -> the tested path, or nothing
@@ -334,7 +334,7 @@ so_proof_absence_is_unwitnessed() { # <command> <objective-file>
   local path; path="$(so_proof_negative_existence_path "$1")"
   [ -n "$path" ] || return 1
   local seen
-  seen="$( { so_section "$2" "CURRENT REALITY"; so_section "$2" "FAILED APPROACHES"; } 2>/dev/null )"
+  seen="$( so_prog_section "$2" "CURRENT REALITY" 2>/dev/null )"
   grep -qF -- "$path" <<< "$seen" && return 1
   return 0
 }
@@ -386,31 +386,16 @@ so_append_entry() { # <file> <text>
     printf -- '- %s  %s\n' "$(so_now)" "$text"
     printf '\n'
     so_objective_heading "$file"
-    so_objective_layer "$file" | awk -v names="$SO_SECTIONS" '
-      BEGIN { n = split(names, H, "|") }
-      function head(line,   i, nm, rest) {
-        for (i = 1; i <= n; i++) {
-          nm = H[i]
-          if (substr(line, 1, length(nm)) != nm) continue
-          rest = substr(line, length(nm) + 1)
-          if (rest == "" || rest ~ /^[[:space:]]/ || rest ~ /^:/) { HEAD = nm; return 1 }
-        }
-        return 0
-      }
-      {
-        if (head($0)) {
-          cur = HEAD
-          if (cur == "STATUS") { print "STATUS"; print "ACTIVE"; seen = 1; next }
-          print; next
-        }
-        if (cur == "STATUS") next
-        print
-      }
-      END { if (!seen) { print "STATUS"; print "ACTIVE" } }'
+    so_objective_layer "$file"
+    so_progress_heading "$file"
+    so_progress_layer "$file"
   } > "$tmp" || { rm -f "$tmp"; return 1; }
   cat "$tmp" > "$file" || { rm -f "$tmp"; return 1; }
   rm -f "$tmp"
-  return 0
+  # The operator speaking again reactivates the objective: a NEEDS-DECISION he has just
+  # answered, a WAITING whose work he has overtaken, and a COMPLETE he has reopened all
+  # become ACTIVE. STATUS lives in PROGRESS in 2.0, so it is set there.
+  so_set_status "$file" "ACTIVE"
 }
 
 # ---------------------------------------------------------------------------
@@ -522,7 +507,9 @@ so_set_status() { # <file> <new status line>
   {
     so_ledger_layer "$file"
     so_objective_heading "$file"
-    so_objective_layer "$file" | awk -v names="$SO_SECTIONS" -v newstatus="$new" '
+    so_objective_layer "$file"
+    so_progress_heading "$file"
+    so_progress_layer "$file" | awk -v names="$SO_PROG_SECTIONS" -v newstatus="$new" '
       BEGIN { n = split(names, H, "|") }
       function head(line,   i, nm, rest) {
         for (i = 1; i <= n; i++) {
@@ -574,4 +561,30 @@ so_apply_edit_to_copy() { # <current-file> <old-string-file> <new-string-file> <
       i = index(src, old)
       printf "%s", substr(src, 1, i - 1) new substr(src, i + length(old))
     }' > "$4"
+}
+
+# The PROGRESS layer a brand-new session starts with. The agent owns every line of it.
+so_progress_template() {
+  cat <<'TPL'
+PROOFS
+
+CURRENT REALITY
+
+FRONTIER
+
+IN FLIGHT
+none
+
+STATUS
+ACTIVE
+TPL
+}
+
+# The text of the last ledger entry, without its timestamp prefix. Used to recognise the
+# same prompt arriving twice from a runtime that fires the hook more than once.
+so_ledger_last_text() { # <file>
+  so_ledger_layer "$1" | awk '
+    /^- [0-9]{4}-[0-9]{2}-[0-9]{2}T/ { n++; buf[n] = substr($0, index($0, "  ") + 2); next }
+    n > 0 { buf[n] = buf[n] "\n" $0 }
+    END { if (n > 0) printf "%s", buf[n] }'
 }

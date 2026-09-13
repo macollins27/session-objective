@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
 # SO-ROLE: guard
-# objective-ledger-append.sh — UserPromptSubmit hook. Rule 1, first half.
+# objective-ledger-append.sh — UserPromptSubmit hook. The only writer of the LEDGER,
+# and the only caller of the interpreter.
 #
-# Appends the operator's message to the ledger VERBATIM, resets STATUS to ACTIVE
-# (F2, so nothing can park in NEEDS-DECISION), then injects the whole file plus one
-# instruction: rewrite the OBJECTIVE layer to reflect every ledger entry, then work.
+# Order: a harness notification is turned away; a genuine operator message is appended
+# verbatim; the interpreter then rewrites the OBJECTIVE from the whole ledger; the
+# OBJECTIVE and PROGRESS layers are injected. There is no write-before-act lock in 2.0
+# and nothing to force: interpretation has already happened before the agent sees the
+# message.
 #
-# The lock itself lives in objective-write-gate.sh; this hook only moves the number
-# the lock compares against.
-#
-# FAILURE DIRECTION (audited 2026-09-12): FAILS CLOSED on parsing, OPEN on injection.
-#   jq missing                     -> exit 2 with the install command (F13)
+# FAILURE DIRECTION (audited 2026-09-13): FAILS CLOSED on recording, OPEN on
+# interpretation.
+#   jq missing                     -> exit 2 with the install command
 #   stdin not a JSON object        -> exit 2
 #   no session_id                  -> exit 2
-#   SESSION_OBJECTIVE=off          -> exit 0, one visible line (F11)
+#   SESSION_OBJECTIVE=off          -> exit 0, one visible line (the interpreter too)
 #   objective home unwritable      -> exit 2 (an unrecorded operator message is the one
-#                                     failure this whole system exists to prevent)
-#   file present but unparseable   -> exit 2 (never silently re-template over it)
-# A UserPromptSubmit hook cannot "allow" or "deny": exit 2 aborts the prompt with the
-# reason shown, which is the correct direction for a ledger that could not be written.
+#                                    failure this whole system exists to prevent)
+#   interpreter fails              -> exit 0 with a visible line; the OBJECTIVE is left
+#                                    exactly as it was, the agent keeps working against
+#                                    it, and the next operator message retries. The Stop
+#                                    gate refuses COMPLETE while the binding lags.
 set -uo pipefail
 
 # FAIL-CLOSED INPUT VALIDATION — see lib.
@@ -37,151 +39,111 @@ mkdir -p "$DIR" 2>/dev/null || so_fatal "cannot create $DIR; the operator ledger
 FIRST=0
 if [ ! -f "$FILE" ]; then
   FIRST=1
-  { printf '%s\n\n' "$SO_LEDGER_HEAD"; so_template; } > "$FILE" \
-    || so_fatal "cannot write $FILE. Failing CLOSED."
+  {
+    printf '%s\n\n' "$SO_LEDGER_HEAD"
+    printf '# OBJECTIVE (interpreter-written from the ledger only; revision 0, bound to ledger entry 0; model none)\n\n'
+    printf '%s\n' "$SO_PROGRESS_HEAD"
+    so_progress_template
+  } > "$FILE" || so_fatal "cannot write $FILE. Failing CLOSED."
 fi
 [ -r "$FILE" ] || so_fatal "$FILE exists but is not readable. Failing CLOSED."
 [ -n "$(so_objective_heading "$FILE")" ] \
   || so_fatal "$FILE has no '# OBJECTIVE (...)' heading; refusing to append to a file I cannot parse. Failing CLOSED."
 
-# --- D1: a harness notification is not the operator ------------------------
+# --- a harness notification is not the operator ----------------------------
 if so_is_notification "$PROMPT"; then
-  # It is not appended, it does not advance the count, and it does not lock. It does
-  # clear WAITING (D3): the thing that was in flight has landed, so the objective is
-  # live again.
   ST="$(so_status "$FILE")"
   case "$ST" in
     WAITING*) so_set_status "$FILE" "ACTIVE" || true; ST="ACTIVE" ;;
   esac
-  printf 'session-objective: background notification received; the objective is %s; update the OBJECTIVE layer when the work it reports lands.\n' "${ST:-ACTIVE}"
+  printf 'session-objective: background notification received; the objective is %s; update PROGRESS when the work it reports lands.\n' "${ST:-ACTIVE}"
   exit 0
 fi
 
-# --- append the message verbatim -------------------------------------------
-# The entry opens with "- <ISO-8601 UTC>  ". A multi-line message keeps its
-# remaining lines raw and unindented; entries are counted by their timestamp
-# prefix, and the LEDGER layer ends at the OBJECTIVE heading, so raw text can
-# neither forge an entry boundary in the objective layer nor be lost.
-so_append_entry "$FILE" "$PROMPT" \
-  || so_fatal "cannot rewrite $FILE; the operator message was not recorded. Failing CLOSED."
+# --- migration from a 1.x file ---------------------------------------------
+# A 1.x objective was written by the in-session agent. It is not upgraded in place and
+# it is not thrown away: it is archived beside the file, PROGRESS is seeded from what
+# it knew, and the interpreter writes the new OBJECTIVE from the ledger below.
+if grep -q '^# OBJECTIVE (agent-written' "$FILE" 2>/dev/null; then
+  ARCH="$DIR/objective.v1.$(date -u +%Y%m%dT%H%M%SZ).md"
+  OLD_STATUS="$(awk '/^STATUS[[:space:]]*$/ { getline; print; exit }' "$FILE" 2>/dev/null || true)"
+  OLD_FRONTIER="$(awk '/^FRONTIER[[:space:]]*$/ { getline; print; exit }' "$FILE" 2>/dev/null || true)"
+  MIG="$(mktemp "${TMPDIR:-/tmp}/so-mig.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
+  awk 'f { print } /^# OBJECTIVE \(/ { f = 1 }' "$FILE" > "$ARCH" 2>/dev/null || true
+  {
+    so_ledger_layer "$FILE"
+    printf '# OBJECTIVE (interpreter-written from the ledger only; revision 0, bound to ledger entry 0; model none)\n\n'
+    printf '%s\n' "$SO_PROGRESS_HEAD"
+    printf 'PROOFS\n\nCURRENT REALITY\nCarried over from the version 1 objective, archived at %s\n\nFRONTIER\n%s\n\nIN FLIGHT\nnone\n\nSTATUS\n%s\n' \
+      "$ARCH" "${OLD_FRONTIER:-(none recorded)}" "${OLD_STATUS:-ACTIVE}"
+  } > "$MIG" && cat "$MIG" > "$FILE"
+  rm -f "$MIG"
+  printf 'session-objective: this session had a version 1 objective, written by the in-session agent. It is archived at %s and the OBJECTIVE below is being rewritten from the operator ledger alone.\n' "$ARCH"
+fi
 
+# --- append the message verbatim -------------------------------------------
+# One prompt, one entry. Measured 2026-09-13 on Codex CLI 0.154.0: a single typed
+# message fired UserPromptSubmit twice and the ledger recorded it twice, which is a
+# small lie about what he said. An identical prompt arriving in the same minute as the
+# entry already at the end of the ledger is the same prompt, not a second one; it is not
+# appended and the interpreter is not re-run, because nothing changed.
+DUP=0
+if [ "$(so_ledger_last_text "$FILE")" = "$PROMPT" ]    && [ "$(so_ledger_last_ts "$FILE")" = "$(so_now)" ]; then
+  DUP=1
+else
+  so_append_entry "$FILE" "$PROMPT" \
+    || so_fatal "cannot rewrite $FILE; the operator message was not recorded. Failing CLOSED."
+fi
 COUNT="$(so_ledger_count "$FILE")"
 
-# --- inject, under a HARD 8,000-character cap (D2, F7) ----------------------
-# Measured 2026-09-13 02:12:33: a 10.8 KB injection was persisted to a file instead of
-# injected ("Output too large"), so the objective was not in context that turn at all —
-# the one turn it most needed to be. A cap that is merely a word budget is not a cap.
-# Four stages, each tried in order, the first that fits wins; the last one always fits.
-SO_INJECT_CAP=8000
+# --- interpret --------------------------------------------------------------
+INTERP_NOTE=""
+if [ "$DUP" = "1" ] && [ "$(so_bound "$FILE")" = "$COUNT" ]; then
+  : # the same prompt arriving twice changed nothing; there is nothing to reinterpret
+elif ! WHY="$("$SO_DIR/objective-interpret.sh" "$FILE" 2>/dev/null)"; then
+  INTERP_NOTE="session-objective: interpreter failed (${WHY:-no reason given}); objective is bound to entry $(so_bound "$FILE") of $COUNT. Work against the objective below; the next message retries, and COMPLETE is refused until the binding catches up."
+fi
 
-render_ledger() { # <recent-cap> <old-cap> ; 0 means "no limit"
-  so_ledger_layer "$FILE" | awk -v keep=3 -v total="$COUNT" -v rcap="$1" -v ocap="$2" '
-    function clip(s, n, i) {
-      gsub(/\n/, " ", s)
-      if (n > 0 && length(s) > n) return substr(s, 1, n) "  … [entry " i " truncated for injection; full text in the file]"
-      return s
-    }
-    /^- [0-9]{4}-[0-9]{2}-[0-9]{2}T/ { idx++; buf[idx] = $0; next }
-    idx > 0 { buf[idx] = buf[idx] "\n" $0; next }
-    { print }
-    END {
-      for (i = 1; i <= idx; i++) {
-        if (i > total - keep) print clip(buf[i], rcap, i)
-        else print clip(buf[i], ocap, i)
-      }
-    }'
-}
-
-render_tail_only() {
-  so_ledger_layer "$FILE" | awk -v total="$COUNT" '
-    /^- [0-9]{4}-[0-9]{2}-[0-9]{2}T/ { idx++; buf[idx] = $0; next }
-    idx > 0 { buf[idx] = buf[idx] "\n" $0; next }
-    { print }
-    END {
-      printf "… [%d ledger entries; only the latest is rendered here, the rest are in the file]\n", total
-      s = buf[idx]; gsub(/\n/, " ", s)
-      if (length(s) > 600) s = substr(s, 1, 600) "  … [truncated; full text in the file]"
-      print s
-    }'
-}
-
-instruction() {
-  cat <<EOF
-INSTRUCTION — rewrite the OBJECTIVE layer to reflect EVERY ledger entry above
-(there are now $COUNT), then work.
-
-$(if [ "$FIRST" = "1" ]; then
-    printf 'Use %s' "$(so_write_instruction "$FILE")"
-  else
-    printf 'Two tool calls, in this order, and no others in between:\n'
-    printf '  1. Read %s   — the hook appended to it a moment ago, so the copy the tool\n' "$FILE"
-    printf '     last saw is stale and the write will be refused without this. The Read is\n'
-    printf '     permitted while the lock is engaged; it is one of the two calls Rule 1 allows.\n'
-    printf '  2. %s\n' "$(so_write_instruction "$FILE")"
-    printf '     — or Edit on that same path, which is far cheaper once the objective is long.\n'
-  fi)
-Rewrite the WHOLE file: keep the OPERATOR LEDGER layer byte-for-byte unchanged, and
-replace the OBJECTIVE layer. Set its heading to:
-  # OBJECTIVE (agent-written, rewritten every turn, revision <N+1>, bound to ledger entry $COUNT)
-Until that write lands, every other tool call is denied.
-
-A line under CONSTRAINTS or REJECTED INTERPRETATIONS may only disappear if the new
-text carries: SUPERSEDED $(so_today) by ledger entry <K>: <the old line>
-Each SUCCESS CONDITION ends with either
-  PROOF: <command> => exit <code>        the Stop hook re-runs the command
-  PROOF: reply contains "<phrase>"       the Stop hook checks your final message
-before it will accept STATUS COMPLETE. When the outcome IS the reply — advice, a
-recommendation, an answer — use the reply form and quote a phrase of at least 12
-characters that your answer will actually contain. Never create a marker file to prove
-advice was given: a file whose only purpose is to be absent proves nothing, and the
-Stop hook refuses it.
-STATUS is ACTIVE, WAITING: <what is in flight>, NEEDS-DECISION: <one plain question>,
-or COMPLETE. Use WAITING when a background agent or job you launched has not reported
-yet — it is the honest way to end a turn, and the hook checks the transcript for a
-launch that has not landed.
-The OBJECTIVE layer is capped at 1,800 words.
-EOF
-  if [ "$FIRST" = "1" ]; then
-    cat <<'EOF'
-This is the first message of the session: ask at most one question, and only if the
-desired outcome is genuinely ambiguous; otherwise write the objective and go.
-EOF
-  fi
-}
-
-assemble() { # <ledger render>
-  cat <<EOF
+# --- inject -----------------------------------------------------------------
+# The ledger is the interpreter's input, not the agent's. It is never injected; one
+# line says how much of it there is. That is what keeps this far under the 8,000
+# characters at which Claude Code stops injecting and writes the payload to a file
+# instead — measured in 1.x at 10.8 KB, on the one turn the objective was needed most.
+cat <<EOF
 ═══ SESSION OBJECTIVE (file: $FILE) ═══
-$1
+ledger: $COUNT entries, last at $(so_ledger_last_ts "$FILE")
 
 $(so_objective_heading "$FILE")
 $(so_objective_layer "$FILE")
+$(so_progress_heading "$FILE")
+$(so_progress_layer "$FILE")
 ═══════════════════════════════════════
-$(instruction)
-EOF
-}
+${INTERP_NOTE}
+The OBJECTIVE above is not yours. It is written from the operator's own messages by a
+call that has never seen this session, and you may not edit a byte of it or of the
+ledger. If it is wrong, that is a fact about what he asked for: say so and let him
+correct it — his next message rewrites it.
 
-OUT="$(assemble "$(render_ledger 600 600)")"
-if [ "${#OUT}" -gt "$SO_INJECT_CAP" ]; then OUT="$(assemble "$(render_ledger 600 200)")"; fi
-if [ "${#OUT}" -gt "$SO_INJECT_CAP" ]; then OUT="$(assemble "$(render_tail_only)")"; fi
-if [ "${#OUT}" -gt "$SO_INJECT_CAP" ]; then
-  # Last resort: the objective layer alone is over budget. Emit what decides the next
-  # action and say where the rest is. This always fits.
-  OUT="$(cat <<EOF
-═══ SESSION OBJECTIVE (file: $FILE) ═══
-$(so_objective_heading "$FILE")
-… [$COUNT ledger entries and the full OBJECTIVE layer are too long to inject; read the
-file with the Read tool on $FILE — that call is permitted]
-STATUS
-$(so_status "$FILE")
-FRONTIER
-$(so_frontier "$FILE")
-═══════════════════════════════════════
-INSTRUCTION — Read $FILE, then rewrite its OBJECTIVE layer to reflect all $COUNT ledger
-entries, using $(so_write_instruction "$FILE"). Until that write lands, every other tool
-call is denied.
+PROGRESS is yours. Keep it current with $(so_write_instruction "$FILE") or an Edit on
+that same path:
+  PROOFS           one line per D-item from DONE WHEN, in one of two forms:
+                     D1 PROOF: <command> => exit <code>     the Stop hook re-runs it
+                     D1 PROOF: reply contains "<phrase>"    it checks your final message
+                   Use the reply form when the outcome IS your reply. Never create a
+                   marker file to prove advice; a file whose only purpose is to be
+                   absent proves nothing and is refused.
+  CURRENT REALITY  at most 80 words. What is true now, not what you did.
+  FRONTIER         one line: the next concrete action.
+  IN FLIGHT        background task ids, or none.
+  STATUS           ACTIVE | WAITING: <what is in flight> | NEEDS-DECISION: <one plain
+                   question> | COMPLETE. COMPLETE is accepted only when every D-item's
+                   proof reproduces and the objective is bound to entry $COUNT.
+Long content belongs in a plan or spec file that the objective points at, not in here.
 EOF
-)"
+if [ "$FIRST" = "1" ]; then
+  cat <<'EOF'
+This is the first message of the session: if OPEN QUESTION is not "none", ask exactly
+that question and stop. Otherwise write PROGRESS and go.
+EOF
 fi
-printf '%s\n' "$OUT"
 exit 0

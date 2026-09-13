@@ -1,5 +1,5 @@
 {
-  "description": "session-objective: one objective file per session. [UserPromptSubmit] append the operator's message to the append-only ledger verbatim, reset STATUS to ACTIVE, inject the file and the rewrite instruction || [PreToolUse, every tool] deny every tool call until the OBJECTIVE layer is bound to the latest ledger entry, except the Write that rewrites it; deny any change to the ledger or to the objective home by any other path; deny an objective rewrite that drops a CONSTRAINT or a REJECTED INTERPRETATION without a SUPERSEDED line || [Stop] refuse to end a turn while STATUS is ACTIVE (bounded at 3 denials), refuse a NEEDS-DECISION whose question was never asked, and refuse a COMPLETE whose PROOF commands do not reproduce their recorded exit codes || [SessionStart] re-inject the file on startup, resume and compact; archive it and start empty on clear || [SubagentStart] seed the subagent's own file from the parent's OBJECTIVE layer with an empty ledger, and inject it",
+  "description": "session-objective 2.0: one objective file per session, split three ways. [UserPromptSubmit] append the operator's message to the append-only ledger verbatim, then rewrite the OBJECTIVE layer with an interpreter call whose only input is that ledger \u2014 no doctrine, no project, no session \u2014 and inject OBJECTIVE plus PROGRESS || [PreToolUse, every tool] deny any write whose result changes a byte of the LEDGER or the OBJECTIVE; validate the PROGRESS layer the write would leave on disk; allow a Read of this session's own objective file || [Stop] refuse to end a turn while STATUS is ACTIVE (bounded at 3), refuse a WAITING with nothing in flight, refuse a NEEDS-DECISION whose question was never asked, and refuse a COMPLETE whose D-item proofs do not reproduce or whose objective still lags the ledger || [SessionStart] re-inject on startup, resume and compact; archive and start empty on clear || [SubagentStart] seed the subagent's own file from the parent's OBJECTIVE layer with an empty ledger",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -7,7 +7,7 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/objective-ledger-append.sh",
-            "timeout": 20
+            "timeout": 90
           }
         ]
       }

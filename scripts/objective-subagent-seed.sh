@@ -41,8 +41,10 @@ mkdir -p "$(dirname "$CHILD")" 2>/dev/null \
   || so_fatal "cannot create $(dirname "$CHILD") to seed this subagent. Failing CLOSED."
 {
   printf '%s\n\n' "$SO_LEDGER_HEAD"
-  printf '# OBJECTIVE (seeded from the parent session at spawn, read-only copy, revision %s, bound to ledger entry 0)\n' "$(so_revision "$PARENT")"
+  printf '# OBJECTIVE (seeded from the parent session at spawn, read-only copy; revision %s, bound to ledger entry 0; model inherited)\n' "$(so_revision "$PARENT")"
   so_objective_layer "$PARENT"
+  printf '%s\n' "$SO_PROGRESS_HEAD"
+  so_progress_template
 } > "$CHILD" || so_fatal "cannot write $CHILD. Failing CLOSED."
 
 cat <<EOF
