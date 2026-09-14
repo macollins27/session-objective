@@ -4,15 +4,15 @@
     "name": "Maxwell Collins"
   },
   "metadata": {
-    "description": "One objective file per session, written from the operator's messages by an interpreter that has never seen the session.",
-    "version": "2.1.0"
+    "description": "One objective file per session, four checkpoints the agent cannot walk past, written from the operator's messages by an interpreter that has never seen the session.",
+    "version": "3.0.0"
   },
   "plugins": [
     {
       "name": "session-objective",
       "source": ".",
-      "description": "One objective file per session, written from the operator's messages by an interpreter that has never seen the session.",
-      "version": "2.1.0",
+      "description": "One objective file per session, four checkpoints the agent cannot walk past, written from the operator's messages by an interpreter that has never seen the session.",
+      "version": "3.0.0",
       "author": {
         "name": "Maxwell Collins"
       },

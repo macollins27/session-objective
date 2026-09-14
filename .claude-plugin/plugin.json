@@ -1,7 +1,7 @@
 {
   "name": "session-objective",
-  "version": "2.1.0",
-  "description": "Every session has one objective file, split three ways: the operator's own messages, an OBJECTIVE written from them by a call that has never seen the session, and the agent's PROGRESS. The agent may not touch the first two, and may not end a turn while the objective is ACTIVE.",
+  "version": "3.0.0",
+  "description": "Every session has one objective file, split four ways: the operator's own messages, an OBJECTIVE and a four-checkpoint WORKFLOW written from them by a call that has never seen the session, and the agent's PROGRESS. The agent may not touch the first three, may not change a file in the project until it has recorded a passing proof that it looked at what it is changing, and may not end a turn while the objective is ACTIVE.",
   "author": {
     "name": "Maxwell Collins"
   },

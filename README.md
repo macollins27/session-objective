@@ -1,11 +1,20 @@
 # session-objective
 
-**Every session has one objective file, split three ways. The operator's own messages. An
-OBJECTIVE written from them by a call that has never seen the session. The agent's PROGRESS. The
-agent may not touch the first two, and may not end a turn while the objective is ACTIVE.**
+**Every session has one objective file, split four ways. The operator's own messages. An OBJECTIVE
+written from them by a call that has never seen the session. A WORKFLOW of four checkpoints written
+with it. The agent's PROGRESS. The agent may not touch the first three, may not change a file in
+the project until it has recorded a passing proof that it looked at what it is changing, and may
+not end a turn while the objective is ACTIVE.**
 
 A Claude Code and Codex plugin: five hooks, one file per session, no configuration. You type in
 plain language and correct naturally; you never edit the file. You may glance at it.
+
+Version 3.0 exists because version 2 was ignored. Measured over 57 objective files: the objective
+was translated well and then not acted on, 23 of 57 sessions ended with STATUS still ACTIVE after
+the three-denial budget ran out, and 11 files carried an empty CURRENT REALITY. The one part that
+held was the one part a machine checks — 187 of 206 proof lines are non-trivial, because the stop
+gate re-runs them. So 3.0 replaces advice with checkpoints: exit conditions the hooks refuse to let
+the agent pass without proof, and locks that make their order physical.
 
 ---
 
@@ -29,18 +38,29 @@ MUST NOT       his constraints and rejected interpretations, each citing an entr
 DONE WHEN      D1..Dn, observable end states in plain language
 OPEN QUESTION  exactly one plain question, or "none"
 
+# WORKFLOW (interpreter-written with the objective; the fixed skeleton, filled for this task)
+C1 UNDERSTAND — what must have been OBSERVED before anything changes, ≤ 40 words
+C2 BUILD — what must EXIST or have CHANGED, ≤ 40 words
+C3 PROVE — every DONE WHEN item has a proof that reproduces        (fixed text)
+C4 VERIFY — a fresh-context verifier ran after the last change and returned PASS   (fixed text)
+
 # PROGRESS (agent-written)
+CHECKPOINTS      C1 PROOF: <command> => exit <code>, then C2. Append-only, run when recorded.
 PROOFS           one line per D-item
-CURRENT REALITY  ≤ 80 words
-FRONTIER         one line, the next concrete action
 IN FLIGHT        background task ids, or "none"
 STATUS           ACTIVE | WAITING: <what> | NEEDS-DECISION: <question> | COMPLETE
 ```
 
+`CURRENT REALITY` and `FRONTIER` are gone, and with them the demand that the agent rewrite a
+narrative every turn: they were written by the same drifting context they were meant to correct.
+PROGRESS is written when a checkpoint is reached, when something is launched in the background, and
+when the status changes. `KIND: conversation` gets a one-line WORKFLOW, `none (conversation)`, and
+no lock.
+
 `$SESSION_OBJECTIVE_HOME/sessions/<session_id>/objective.md`, default home `~/.session-objective`.
 One file per session, outside the project, never in the repository. A subagent gets its own file at
 `<session_id>/<agent_id>`, because a subagent's events carry the parent's `session_id` — measured,
-not assumed (`docs/payload-evidence/`). Caps: OBJECTIVE ≤ 200 words, PROGRESS ≤ 300.
+not assumed (`docs/payload-evidence/`). Caps: OBJECTIVE and WORKFLOW together ≤ 280 words, PROGRESS ≤ 300.
 
 ## Who writes what
 
@@ -48,9 +68,10 @@ not assumed (`docs/payload-evidence/`). Caps: OBJECTIVE ≤ 200 words, PROGRESS 
 |---|---|---|
 | LEDGER | the `UserPromptSubmit` hook, from genuine operator prompts only | denied |
 | OBJECTIVE | the interpreter, from the ledger only | denied |
+| WORKFLOW | the interpreter, with the objective | denied |
 | PROGRESS | the agent, via `Write`, `Edit` or `apply_patch` on exactly this session's path | validated |
 
-Any write whose **result** changes a byte of LEDGER or OBJECTIVE is denied — the content the
+Any write whose **result** changes a byte of LEDGER, OBJECTIVE or WORKFLOW is denied — the content the
 runtime would actually leave on disk is what gets judged, not the request that asked for it.
 
 The shell is held to the same boundary in two passes, because a literal match is not enough: a
@@ -87,7 +108,14 @@ Every flag was verified by measurement rather than read off a page: a probe plac
 
 Its answer is a claim until something checks it. `scripts/objective-validate.sh` requires every
 heading, in order; the word caps; `DONE WHEN` numbered `D1, D2, D3`; at most one `OPEN QUESTION`;
-and no `MUST`/`MUST NOT` line dropped without a `SUPERSEDED by #K:` line carrying it. A refusal is
+no `MUST`/`MUST NOT` line dropped without a `SUPERSEDED by #K:` line carrying it; and the WORKFLOW:
+exactly four lines, in order, with the fixed names, `C1` and `C2` between 3 and 40 words, `C3` and
+`C4` compared **byte for byte** against their fixed text. Those two are not the model's to reword,
+because what satisfies them is decided by a mechanism — the D-item re-run and the transcript — and
+a reworded line would be a promise nothing checks. If the workflow is refused twice, the hook
+substitutes the generic skeleton (*the current state of everything the outcome touches has been
+observed* / *the outcome exists as the objective describes it*) rather than losing the revision: a
+weak checkpoint still orders the work; no objective at all orders nothing. A refusal is
 retried once with the violation in front of the model. If it still drops the operator's own lines,
 the hook puts them back itself — byte for byte, untagged, with the repair recorded on its own line
 underneath — so his words are not lost because a model would not repeat them.
@@ -103,11 +131,11 @@ Measured latency over the acceptance runs: **p50 7.6 s** (5.4 – 9.1 s), once p
 | STATUS | Stop hook |
 |---|---|
 | `ACTIVE`, `KIND: conversation` | **Allowed.** He asked for an answer, not for a thing; the reply is the deliverable. |
-| `ACTIVE`, `KIND: task` | Denied, with `FRONTIER` as the instruction. Bounded at 3 denials per session, then allowed with a visible line. |
+| `ACTIVE`, `KIND: task` | Denied, naming the **current checkpoint** — the first of C1, C2 without a proof on disk, else C3 if a D-item has no proof, else C4 — with its exit condition and how to record it. Bounded at 3 denials per operator message, then allowed with a visible line. |
 | `ACTIVE`, `KIND: task`, turn made **no tool calls** since your last message | Denied regardless of the budget. The apology-that-ends-the-turn never passes. |
 | `WAITING: <what is in flight>` | Allowed only when the transcript shows a background launch since your last message that has not reported back. |
 | `NEEDS-DECISION: <question>` | Allowed only if the question appears verbatim in the final message. |
-| `COMPLETE` | Allowed only when every `D-item` in `DONE WHEN` has a `PROOFS` line that reproduces, and the objective is bound to every ledger entry. |
+| `COMPLETE` | Allowed only when the `C1` and `C2` checkpoint proofs reproduce, every `D-item` in `DONE WHEN` has a `PROOFS` line that reproduces, the transcript shows a fresh-context verifier answering `PASS` after the last product write, and the objective is bound to every ledger entry. |
 
 A proof is `PROOF: <command> => exit <code>` (re-run in the session cwd, 60 s bound, never
 elevated, destructive commands refused) or `PROOF: reply contains "<phrase>"` (≥ 12 characters,
@@ -123,8 +151,39 @@ is a real command with a real exit code, and nothing mechanical can tell that th
 attached to was about something else. That judgement belongs to a fresh reader of the finished
 work, and this plugin does not pretend otherwise.
 
-There is **no write-before-act lock** in 2.0. Interpretation has already happened, inside the hook,
-before the agent saw the message. There is nothing left to force.
+## The checkpoints, and the lock
+
+```
+C1 UNDERSTAND   what must have been OBSERVED about the current state before anything changes
+C2 BUILD        what must EXIST or have CHANGED
+C3 PROVE        every DONE WHEN item has a proof that reproduces
+C4 VERIFY       a fresh-context verifier ran after the last change and returned PASS
+```
+
+**The edit lock.** While the objective is a task and no `C1` proof is on disk, every `Write`,
+`Edit`, `MultiEdit`, `NotebookEdit` and `apply_patch` landing under the session cwd is denied, with
+C1's exit condition and the one line that records it. The scratchpad, `/tmp` and the objective file
+itself are outside cwd and are never locked: the lock stops the agent changing what it has not
+looked at, not thinking on paper.
+
+*Its bound, stated rather than hidden:* **Bash is not covered.** An agent that wanted to evade the
+lock could write a file with `cat >`. The lock forces order on an agent that drifts; it is not a
+defence against one that evades, and the byte-for-byte layer comparison is what covers tampering.
+
+**A proof is never on disk unless it passed.** When a write records a `Cn PROOF` line the file does
+not already carry, the gate runs that command right then — same bounds, same trivial, destructive
+and unwitnessed-absence classifiers as the stop gate — and denies the write with the command's own
+output if it does not reproduce. Recorded proofs are **append-only**: an existing `Cn PROOF` line
+may not be changed or removed, and `C2` may not be recorded before `C1` is on disk. `C3` and `C4`
+carry no proof lines of their own; they are satisfied by the D-item re-run and by the transcript.
+
+**C4, from the transcript.** After the last `Write`/`Edit`/`MultiEdit`/`NotebookEdit`/`apply_patch`
+whose target lands under cwd, there must be a later `Agent`/`Task`/`Workflow` call, or a shell call
+carrying `claude -p` or `codex exec`, whose result contains the whole word `PASS`. If the transcript
+holds no product write at all, the verifier must come after the operator's last message. Both
+runtime formats are read. An unreadable or unrecognisable transcript makes this one check — and the
+zero-tool-call check — fail **open**, with a visible line: a parser bug must never wedge a session.
+Everything else stays fail-closed, `WAITING` included.
 
 ## Just talking
 
@@ -197,6 +256,18 @@ next entry and rewrites the objective on its own.
 
 Every rule below was earned by watching this thing run, not by imagining how it might fail.
 
+**2026-09-13, version 3.0 — the objective was read and ignored.** Across 57 objective files and
+100+ agents: **23 of 57** sessions ended with STATUS still ACTIVE — the stop gate refused three
+times, the budget ran out, and the agent was let go, so the apology exit was delayed rather than
+prevented. **60** transcripts carry stop refusals and the work still did not move. **11** files
+have an empty CURRENT REALITY, and sampled ACTIVE-ended files have a blank PROGRESS layer
+altogether: per-turn rewriting produced nothing the agent would not have produced anyway, because
+it is written by the same drifting context it is meant to correct. The one part that held is the
+one part a machine checks — **187 of 206** proof lines are non-trivial, because the stop gate
+re-runs them. Text that describes what an agent should do is advice; on this machine only
+mechanisms that refuse have ever changed agent behaviour. Hence checkpoints, the edit lock, proofs
+run at the moment they are recorded, and a verifier read out of the transcript rather than claimed.
+
 **2026-09-13, version 2.0 — pollution control.** A throwaway repo carrying a project `CLAUDE.md`
 and a memory file that both said *"Always run corpus recall before any grep. Reviewer budget is two
 spawns"*, and demanded rollback sections and zebra-striped tables. Across a three-message session
@@ -241,8 +312,8 @@ standing aside, because standing aside leaves the prompt in place.
 **2026-09-12, proof theater.** On an advice-only task the agent invented
 `test ! -e <scratchpad>/code-written.flag => exit 0` — a file that never existed and never would —
 and the gate accepted COMPLETE. `PROOF: reply contains "<phrase>"` is the honest form for an outcome
-whose evidence is the reply, and a negative-existence proof is refused unless `CURRENT REALITY`
-names the path.
+whose evidence is the reply, and a negative-existence proof is refused unless the path is named
+somewhere that is not the proof line itself — in 3.0, the WORKFLOW or a proof already recorded.
 
 ---
 

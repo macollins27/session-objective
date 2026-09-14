@@ -1,7 +1,7 @@
 {
   "name": "session-objective",
-  "version": "2.1.0",
-  "description": "Every session has one objective file, split three ways: the operator's own messages, an OBJECTIVE written from them by a call that has never seen the session, and the agent's PROGRESS. The agent may not touch the first two, and may not end a turn while the objective is ACTIVE.",
+  "version": "3.0.0",
+  "description": "Every session has one objective file, split four ways: the operator's own messages, an OBJECTIVE and a four-checkpoint WORKFLOW written from them by a call that has never seen the session, and the agent's PROGRESS. The agent may not touch the first three, may not change a file in the project until it has recorded a passing proof that it looked at what it is changing, and may not end a turn while the objective is ACTIVE.",
   "author": {
     "name": "Maxwell Collins"
   },
@@ -10,8 +10,8 @@
   "commands": "./commands",
   "interface": {
     "displayName": "Session Objective",
-    "shortDescription": "One objective file per session: write before act, nothing said disappears, ACTIVE cannot end a turn.",
-    "longDescription": "Five hooks and one file per session. Every message you send is appended to an append-only ledger verbatim; until the agent rewrites the objective to reflect it, every tool call is refused. A constraint may only disappear behind a SUPERSEDED line naming it. A turn does not end while the objective is ACTIVE, and COMPLETE is accepted only when the hook re-runs each PROOF command and reproduces its recorded exit code.",
+    "shortDescription": "One objective file per session: four checkpoints, an edit lock until you have looked, nothing said disappears.",
+    "longDescription": "Five hooks and one file per session. Every message you send is appended to an append-only ledger verbatim, and an interpreter that has never seen the session writes the objective and a four-checkpoint workflow from it alone. Until the agent records a proof that it has observed what it is about to change — a command the hook runs the moment the line is written — no file in the project may be changed. A constraint may only disappear behind a SUPERSEDED line naming it. A turn does not end while the objective is ACTIVE, and COMPLETE is accepted only when the hook re-runs every proof and the transcript shows a fresh verifier answering PASS after the last change.",
     "developerName": "Maxwell Collins",
     "category": "Productivity",
     "capabilities": [
