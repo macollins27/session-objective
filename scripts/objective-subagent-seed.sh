@@ -43,6 +43,10 @@ mkdir -p "$(dirname "$CHILD")" 2>/dev/null \
   printf '%s\n\n' "$SO_LEDGER_HEAD"
   printf '# OBJECTIVE (seeded from the parent session at spawn, read-only copy; revision %s, bound to ledger entry 0; model inherited)\n' "$(so_revision "$PARENT")"
   so_objective_layer "$PARENT"
+  if [ -n "$(so_workflow_heading "$PARENT")" ]; then
+    printf '%s\n' "$SO_WORKFLOW_HEAD"
+    so_workflow_layer "$PARENT"
+  fi
   printf '%s\n' "$SO_PROGRESS_HEAD"
   so_progress_template
 } > "$CHILD" || so_fatal "cannot write $CHILD. Failing CLOSED."
@@ -50,10 +54,18 @@ mkdir -p "$(dirname "$CHILD")" 2>/dev/null \
 cat <<EOF
 ═══ PARENT SESSION OBJECTIVE (inherited at spawn; your copy: $CHILD) ═══
 $(so_objective_layer "$PARENT")
+$(so_workflow_layer "$PARENT")
 ═══════════════════════════════════════
 This is the operator's objective for the session that dispatched you. Your own ledger
 is empty: you take no operator messages, so nothing here is yours to renegotiate. If
 your brief conflicts with the objective above, say so in your report rather than
 resolving it silently.
+
+The checkpoints above are yours too, in your own copy of the file: until you record a
+C1 proof in $CHILD, no Write, Edit or patch under the session directory is permitted.
+Record it with the Write tool on exactly that path, adding under CHECKPOINTS the line
+  C1 PROOF: <command> => exit <code>
+The hook runs that command the moment you write it and refuses the write unless it
+reproduces.
 EOF
 exit 0

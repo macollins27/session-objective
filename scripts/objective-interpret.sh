@@ -64,7 +64,9 @@ TMPDIR_RUN="$(mktemp -d "${TMPDIR:-/tmp}/so-interp.XXXXXX")" || { echo "objectiv
 trap 'rm -rf "$TMPDIR_RUN"' EXIT
 CAND="$TMPDIR_RUN/candidate.md"
 PREVF="$TMPDIR_RUN/previous.md"
+PREVWF="$TMPDIR_RUN/previous-workflow.md"
 so_objective_layer "$FILE" > "$PREVF"
+so_workflow_layer "$FILE" > "$PREVWF"
 
 N="$(so_ledger_count "$FILE")"
 REV="$(so_revision "$FILE")"; [ -n "$REV" ] || REV=0
@@ -78,6 +80,8 @@ build_input() { # <extra instruction, may be empty>
     n > 0 { print }'
   printf '\nPREVIOUS OBJECTIVE\n'
   if [ -s "$PREVF" ] && [ -n "$(tr -d '[:space:]' < "$PREVF")" ]; then cat "$PREVF"; else printf 'NONE\n'; fi
+  printf '\nPREVIOUS WORKFLOW\n'
+  if [ -s "$PREVWF" ] && [ -n "$(tr -d '[:space:]' < "$PREVWF")" ]; then cat "$PREVWF"; else printf 'NONE\n'; fi
   if [ -n "${1:-}" ]; then printf '\nCORRECTION — your previous answer was refused: %s\nFix exactly that and answer again.\n' "$1"; fi
 }
 
@@ -121,12 +125,36 @@ attempt() { # <extra instruction>
   call_interpreter "$TMPDIR_RUN/input.txt" "$CAND" || return 1
   [ -s "$CAND" ] || return 1
   # Strip a code fence if the model wrapped the document in one; everything else is
-  # judged as written.
-  sed -i.bak -E '/^```/d' "$CAND" 2>/dev/null || true
+  # judged as written, with ONE lexical exception: the dash between a checkpoint's name
+  # and its exit condition is normalised to an em dash. C3 and C4 are compared byte for
+  # byte, and a model that types a hyphen where the skeleton prints an em dash has not
+  # changed the contract — it has changed one character of punctuation. Normalising it
+  # here keeps the byte comparison strict about the WORDS without failing an otherwise
+  # perfect answer over a keyboard.
+  sed -i.bak -E '/^```/d; s/^(C[1-4] [A-Z]+)[[:space:]]*[-–—]+[[:space:]]*/\1 — /' "$CAND" 2>/dev/null || true
   rm -f "$CAND.bak"
   return 0
 }
 
+# The generic skeleton, for a candidate whose WORKFLOW the validator refused twice. The
+# objective survives; the checkpoints fall back to the weakest form that still orders
+# the work. Everything after the WORKFLOW heading is replaced, and a heading is added
+# when the model omitted one.
+repair_workflow() { # <candidate-file>
+  local cand="$1" kind body
+  kind="$(sed -nE 's/^KIND:[[:space:]]*(task|conversation)[[:space:]]*$/\1/p' "$cand" | head -1)"
+  if [ "$kind" = "conversation" ]; then
+    body="$SO_CONVERSATION_WORKFLOW"
+  else
+    body="$(printf '%s\n%s\n%s\n%s' "$SO_C1_GENERIC" "$SO_C2_GENERIC" "$SO_C3_TEXT" "$SO_C4_TEXT")"
+  fi
+  {
+    awk '/^# WORKFLOW/ { exit } { print }' "$cand"
+    printf '# WORKFLOW\n%s\n' "$body"
+  } > "$cand.wf" && mv "$cand.wf" "$cand"
+}
+
+WF_REPAIRED=0
 if ! attempt ""; then
   printf 'the interpreter call did not produce an answer\n'
   exit 1
@@ -147,10 +175,17 @@ if [ "$VRC" != "0" ]; then
   # Still refused. If the ONLY remaining complaints are dropped MUST / MUST NOT lines,
   # the hook puts them back itself: the operator's own words are not lost because a
   # model would not repeat them. Anything else is a failure and the file is untouched.
-  OTHER="$(printf '%s\n' "$REASONS" | grep -v '^a line under ' || true)"
+  OTHER="$(printf '%s\n' "$REASONS" | grep -v '^a line under ' | grep -v '^WORKFLOW: ' || true)"
   if [ -n "$(printf '%s' "$OTHER" | tr -d '[:space:]')" ]; then
     printf 'the answer did not pass validation: %s\n' "$(printf '%s' "$REASONS" | tr '\n' ';')"
     exit 1
+  fi
+  # A refused WORKFLOW is repaired to the generic skeleton rather than losing the whole
+  # revision: an objective bound to the ledger with weak checkpoints still locks the
+  # order of the work; no objective at all locks nothing.
+  if grep -q '^WORKFLOW: ' <<< "$REASONS"; then
+    repair_workflow "$CAND"
+    WF_REPAIRED=1
   fi
   KEPT="$TMPDIR_RUN/kept.md"
   : > "$KEPT"
@@ -188,11 +223,18 @@ fi
 
 # Apply: ledger unchanged, new OBJECTIVE layer, PROGRESS unchanged.
 OUT="$TMPDIR_RUN/new.md"
+CAND_OBJ="$TMPDIR_RUN/candidate-objective.md"
+CAND_WF="$TMPDIR_RUN/candidate-workflow.md"
+awk '/^# WORKFLOW/ { exit } { print }' "$CAND" > "$CAND_OBJ"
+awk 'f { print } /^# WORKFLOW/ { f = 1 }' "$CAND" | sed -E '/^[[:space:]]*$/d' > "$CAND_WF"
+[ -s "$CAND_WF" ] || { printf 'the answer carried no workflow\n'; exit 1; }
 {
   so_ledger_layer "$FILE"
   printf '# OBJECTIVE (interpreter-written from the ledger only; revision %s, bound to ledger entry %s; model %s)\n' \
     "$((REV + 1))" "$N" "$MODEL_NOTE"
-  cat "$CAND"
+  cat "$CAND_OBJ"
+  printf '\n%s\n' "$SO_WORKFLOW_HEAD"
+  cat "$CAND_WF"
   printf '\n'
   if [ -n "$(so_progress_heading "$FILE")" ]; then
     so_progress_heading "$FILE"
@@ -203,4 +245,5 @@ OUT="$TMPDIR_RUN/new.md"
   fi
 } > "$OUT" || { printf 'the new objective could not be assembled\n'; exit 1; }
 cat "$OUT" > "$FILE" || { printf 'the new objective could not be written\n'; exit 1; }
+[ "$WF_REPAIRED" = "1" ] && printf 'the workflow was refused twice and the generic skeleton was substituted\n' >&2
 exit 0

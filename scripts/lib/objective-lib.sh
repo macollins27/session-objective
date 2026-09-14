@@ -89,11 +89,28 @@ so_file() {
 # File parsing
 # ---------------------------------------------------------------------------
 SO_LEDGER_HEAD='# OPERATOR LEDGER (hook-written, append-only, agent may not edit)'
+SO_WORKFLOW_HEAD='# WORKFLOW (interpreter-written with the objective; the fixed skeleton, filled for this task)'
 SO_PROGRESS_HEAD='# PROGRESS (agent-written)'
 # Order matters: MUST NOT is tested before MUST, or a "MUST NOT" heading reads as a
 # "MUST" heading with an inline value of "NOT".
 SO_OBJ_SECTIONS='OUTCOME|MUST NOT|MUST|DONE WHEN|OPEN QUESTION'
-SO_PROG_SECTIONS='PROOFS|CURRENT REALITY|FRONTIER|IN FLIGHT|STATUS'
+# 3.0: CURRENT REALITY and FRONTIER are gone. They were rewritten every turn by the
+# same drifting context they were meant to correct, and 11 of 57 measured files carried
+# an empty one. CHECKPOINTS replaces them: a proof line per checkpoint, append-only,
+# each one run at the moment it is recorded.
+SO_PROG_SECTIONS='CHECKPOINTS|PROOFS|IN FLIGHT|STATUS'
+
+# The four-checkpoint skeleton. C1 and C2 are the interpreter's, per task. C3 and C4 are
+# FIXED TEXT: C3 is satisfied when every D-item proof reproduces, C4 from the transcript,
+# so neither carries a proof line of its own and neither is the model's to reword.
+SO_C3_TEXT='C3 PROVE — every DONE WHEN item has a proof that reproduces'
+SO_C4_TEXT='C4 VERIFY — a fresh-context verifier ran after the last change and returned PASS'
+# The generic skeleton the hook falls back to when the interpreter could not produce a
+# usable WORKFLOW twice running. It is weaker than a task-specific one and it still
+# orders the work, which is the whole point of the lock.
+SO_C1_GENERIC='C1 UNDERSTAND — the current state of everything the outcome touches has been observed'
+SO_C2_GENERIC='C2 BUILD — the outcome exists as the objective describes it'
+SO_CONVERSATION_WORKFLOW='none (conversation)'
 
 # Three layers in 2.0, one writer each:
 #   LEDGER    the hook, from genuine operator prompts only
@@ -103,7 +120,13 @@ so_ledger_layer() { # <file>
   awk '/^# OBJECTIVE \(/ { exit } { print }' "$1" 2>/dev/null || true
 }
 so_objective_layer() { # <file>  (body only, heading excluded)
-  awk '/^# PROGRESS \(/ { exit } f { print } /^# OBJECTIVE \(/ { f = 1 }' "$1" 2>/dev/null || true
+  awk '/^# (WORKFLOW|PROGRESS) \(/ { exit } f { print } /^# OBJECTIVE \(/ { f = 1 }' "$1" 2>/dev/null || true
+}
+so_workflow_layer() { # <file>  (body only, heading excluded; empty on a 2.x file)
+  awk '/^# PROGRESS \(/ { exit } f { print } /^# WORKFLOW \(/ { f = 1 }' "$1" 2>/dev/null || true
+}
+so_workflow_heading() { # <file>
+  grep -m1 -E '^# WORKFLOW \(' "$1" 2>/dev/null || true
 }
 so_progress_layer() { # <file>  (body only, heading excluded)
   awk 'f { print } /^# PROGRESS \(/ { f = 1 }' "$1" 2>/dev/null || true
@@ -168,9 +191,8 @@ so_entries_of() { # <layer text> <names> <section>
 so_obj_entries()  { so_entries_of "$(so_objective_layer "$1")" "$SO_OBJ_SECTIONS"  "$2"; }
 so_prog_entries() { so_entries_of "$(so_progress_layer  "$1")" "$SO_PROG_SECTIONS" "$2"; }
 
-# STATUS and FRONTIER live in PROGRESS in 2.0.
+# STATUS lives in PROGRESS.
 so_status() {   so_prog_section "$1" STATUS   | so_trim | grep -v '^$' | head -1 || true; }
-so_frontier() { so_prog_section "$1" FRONTIER | so_trim | grep -v '^$' | head -5 || true; }
 
 # The D-items the interpreter declared, as bare ids (D1, D2 ...).
 so_done_ids() { # <file>
@@ -333,19 +355,27 @@ so_is_reply_proof() { # <success-condition line>
 
 # A negative-existence proof — `test ! -e X`, `[ ! -f X ]` — passes whenever X is
 # absent, and the easiest way to make X absent is never to create it. It is admitted
-# only when the same file's PROGRESS CURRENT REALITY names X, which is
-# the case where the absence is a real claim about work done ("the old file was
-# removed") rather than a claim about a file nobody ever made.
+# only when X is named somewhere that is NOT this proof line: the WORKFLOW the
+# interpreter wrote, or a proof line already recorded. That is the case where the
+# absence is a real claim about work done ("the old file was removed") rather than a
+# claim about a file nobody ever made. (2.x witnessed it from CURRENT REALITY, which
+# 3.0 removed; the witness moved, the rule did not.)
 so_proof_negative_existence_path() { # <command> -> the tested path, or nothing
   sed -nE 's/^[[:space:]]*(test|\[)[[:space:]]+![[:space:]]*-[efdsL][[:space:]]+([^][:space:]]+).*/\2/p' <<< "$1" | head -1
 }
 
-so_proof_absence_is_unwitnessed() { # <command> <objective-file>
+# Everything that may witness an absence in <file>, minus the line under judgement.
+so_absence_witness() { # <objective-file> <the proof line being judged>
+  local file="$1" self="$2"
+  so_workflow_layer "$file"
+  so_prog_section "$file" CHECKPOINTS | grep -vxF -- "$self" || true
+  so_prog_section "$file" PROOFS      | grep -vxF -- "$self" || true
+}
+
+so_proof_absence_is_unwitnessed() { # <command> <witness-text>
   local path; path="$(so_proof_negative_existence_path "$1")"
   [ -n "$path" ] || return 1
-  local seen
-  seen="$( so_prog_section "$2" "CURRENT REALITY" 2>/dev/null )"
-  grep -qF -- "$path" <<< "$seen" && return 1
+  grep -qF -- "$path" <<< "$2" && return 1
   return 0
 }
 
@@ -381,6 +411,26 @@ so_run_bounded() { # <seconds> <command> <cwd>
   )
 }
 
+# The same bound, with the command's own output kept. A proof is refused AT THE MOMENT
+# IT IS RECORDED in 3.0, and a refusal that does not show what the command printed
+# leaves the agent guessing at what it must change.
+so_run_bounded_capture() { # <seconds> <command> <cwd> <out-file>
+  local secs="$1" cmd="$2" dir="$3" out="$4" tb
+  tb="$(command -v timeout 2>/dev/null || command -v gtimeout 2>/dev/null || true)"
+  if [ -n "$tb" ]; then
+    ( cd "$dir" 2>/dev/null || exit 127; "$tb" "$secs" bash -c "$cmd" > "$out" 2>&1 )
+    return $?
+  fi
+  (
+    cd "$dir" 2>/dev/null || exit 127
+    bash -c "$cmd" > "$out" 2>&1 & p=$!
+    ( sleep "$secs"; kill -9 "$p" 2>/dev/null ) & w=$!
+    wait "$p"; rc=$?
+    kill "$w" 2>/dev/null
+    exit "$rc"
+  )
+}
+
 # Append one operator message to the ledger VERBATIM and reset STATUS to ACTIVE (F2).
 # Called from exactly one place, the UserPromptSubmit hook, and deliberately: an
 # agent-invocable way to add a ledger entry is an agent-invocable way to put words in
@@ -397,6 +447,8 @@ so_append_entry() { # <file> <text>
     printf '\n'
     so_objective_heading "$file"
     so_objective_layer "$file"
+    so_workflow_heading "$file"
+    so_workflow_layer "$file"
     so_progress_heading "$file"
     so_progress_layer "$file"
   } > "$tmp" || { rm -f "$tmp"; return 1; }
@@ -518,6 +570,8 @@ so_set_status() { # <file> <new status line>
     so_ledger_layer "$file"
     so_objective_heading "$file"
     so_objective_layer "$file"
+    so_workflow_heading "$file"
+    so_workflow_layer "$file"
     so_progress_heading "$file"
     so_progress_layer "$file" | awk -v names="$SO_PROG_SECTIONS" -v newstatus="$new" '
       BEGIN { n = split(names, H, "|") }
@@ -576,11 +630,9 @@ so_apply_edit_to_copy() { # <current-file> <old-string-file> <new-string-file> <
 # The PROGRESS layer a brand-new session starts with. The agent owns every line of it.
 so_progress_template() {
   cat <<'TPL'
+CHECKPOINTS
+
 PROOFS
-
-CURRENT REALITY
-
-FRONTIER
 
 IN FLIGHT
 none
@@ -607,4 +659,90 @@ so_objective_kind() { # <file> -> task | conversation
   local k
   k="$(so_objective_layer "$1" | sed -nE 's/^KIND:[[:space:]]*(task|conversation)[[:space:]]*$/\1/p' | head -1)"
   printf '%s' "${k:-task}"
+}
+
+# ---------------------------------------------------------------------------
+# 3.0 — the WORKFLOW skeleton and the checkpoints cut into it
+# ---------------------------------------------------------------------------
+# Measured 2026-09-13 over 57 sessions: the OBJECTIVE was translated well and then
+# ignored, because it is prose and prose is advice. A checkpoint is not advice: C1's
+# exit condition is a file the agent may not write until a proof of observation is on
+# disk, and every proof is run at the moment it is recorded. Order is physical.
+
+# One line of the WORKFLOW, by id. Empty on a 2.x file or a conversation.
+so_workflow_line() { # <file> <C1|C2|C3|C4>
+  so_workflow_layer "$1" | grep -m1 -E "^[[:space:]]*$2[[:space:]]" | so_trim || true
+}
+
+# The exit condition: everything after the em dash. Falls back to the whole line when
+# the dash is missing, so a malformed WORKFLOW still says something rather than nothing.
+so_workflow_exit() { # <file> <Cn>
+  local line; line="$(so_workflow_line "$1" "$2")"
+  [ -n "$line" ] || { printf ''; return 0; }
+  if grep -qF -- '—' <<< "$line"; then
+    printf '%s' "${line#*— }"
+  else
+    printf '%s' "$line"
+  fi
+}
+
+# The exit condition to quote at the agent, with a usable fallback for a 2.x file that
+# has no WORKFLOW at all (5.6: such a file is treated as C1 current).
+so_checkpoint_text() { # <file> <Cn>
+  local t; t="$(so_workflow_line "$1" "$2")"
+  if [ -n "$t" ]; then printf '%s' "$t"; return 0; fi
+  case "$2" in
+    C1) printf '%s' "$SO_C1_GENERIC" ;;
+    C2) printf '%s' "$SO_C2_GENERIC" ;;
+    C3) printf '%s' "$SO_C3_TEXT" ;;
+    C4) printf '%s' "$SO_C4_TEXT" ;;
+  esac
+}
+
+# The recorded proof line for one checkpoint, if any.
+so_checkpoint_proof_line() { # <file> <Cn>
+  so_prog_section "$1" CHECKPOINTS | grep -m1 -E "^[[:space:]]*$2[[:space:]]+PROOF:" | so_trim || true
+}
+so_has_checkpoint_proof() { # <file> <Cn>
+  [ -n "$(so_checkpoint_proof_line "$1" "$2")" ]
+}
+
+# Is the workflow the conversation one-liner?
+so_workflow_is_conversation() { # <file>
+  grep -qxF -- "$SO_CONVERSATION_WORKFLOW" <<< "$(so_workflow_layer "$1" | so_trim)"
+}
+
+# THE CURRENT CHECKPOINT (5.3): the first of C1, C2 without a proof on disk; else C3 if
+# any D-item has no proof line; else C4 unless the verifier has already been seen; else
+# `none`, which means COMPLETE is available.
+#
+# BOUND, STATED: C3 here is decided on the PRESENCE of a D-item proof line, not on
+# re-running it. The re-run is the COMPLETE gate's job, where it is paid once; running
+# every D-item proof to word a refusal would put a 60-second bound per item on the end
+# of every turn.
+so_current_checkpoint() { # <file> [verifier: yes|no|unknown]
+  local file="$1" ver="${2:-unknown}" did
+  so_has_checkpoint_proof "$file" C1 || { printf 'C1'; return 0; }
+  so_has_checkpoint_proof "$file" C2 || { printf 'C2'; return 0; }
+  while IFS= read -r did; do
+    [ -n "$did" ] || continue
+    [ -n "$(so_proof_line "$file" "$did")" ] || { printf 'C3'; return 0; }
+  done <<< "$(so_done_ids "$file")"
+  [ "$ver" = "yes" ] && { printf 'none'; return 0; }
+  printf 'C4'
+}
+
+# The one-line recording instruction for exactly that checkpoint (5.5).
+so_checkpoint_instruction() { # <file> <Cn>
+  local file="$1" cn="$2" how; how="$(so_write_instruction "$file")"
+  case "$cn" in
+    C1|C2)
+      printf 'Record it with %s: add under CHECKPOINTS the line  %s PROOF: <command> => exit <code>  — the hook runs that command the moment you write it, and refuses the write unless it reproduces.' "$how" "$cn" ;;
+    C3)
+      printf 'Record it with %s: one PROOFS line per D-item in DONE WHEN,  D1 PROOF: <command> => exit <code>  or  D1 PROOF: reply contains "<phrase>".' "$how" ;;
+    C4)
+      printf 'Run a verifier that has not seen this session — an Agent call, or a shell call to `claude -p` / `codex exec` — AFTER your last change, and have it answer PASS. The Stop hook reads that from the transcript; there is no line to write.' ;;
+    *)
+      printf 'Every checkpoint is satisfied: set STATUS COMPLETE in PROGRESS.' ;;
+  esac
 }

@@ -1,16 +1,31 @@
 #!/usr/bin/env bash
 # SO-ROLE: guard
-# objective-write-gate.sh — PreToolUse hook. In 2.0 it enforces one thing: WHO WRITES
-# WHAT.
+# objective-write-gate.sh — PreToolUse hook. It enforces two things: WHO WRITES WHAT,
+# and, new in 3.0, THE ORDER OF THE WORK.
 #
 #   LEDGER     the UserPromptSubmit hook, from genuine operator prompts only
 #   OBJECTIVE  the interpreter, from the ledger only
+#   WORKFLOW   the interpreter, with the objective
 #   PROGRESS   the agent
 #
-# There is no write-before-act lock in 2.0 and nothing to force: the interpreter has
-# already run, inside the hook, before the agent saw the message. What is left is the
-# boundary — any write whose RESULT changes a byte of LEDGER or OBJECTIVE is denied, and
-# PROGRESS is judged on the content the runtime would actually leave on disk.
+# THE EDIT LOCK (3.0, spec 5.2). While the objective is a task and no C1 proof is on
+# disk, every Write / Edit / MultiEdit / NotebookEdit / apply_patch landing under the
+# session cwd is DENIED, quoting C1's exit condition. Measured over 57 sessions: the
+# objective was translated well and then ignored, because prose is advice. A checkpoint
+# the agent cannot walk past is not advice.
+#
+# ITS BOUND, STATED RATHER THAN HIDDEN: Bash is NOT covered by the lock. An agent that
+# wanted to evade it could write a file with `cat > x`. The lock forces ORDER on an
+# agent that drifts; it is not a defence against one that evades, and nothing here
+# pretends otherwise. The defence against tampering is elsewhere and unchanged: the
+# LEDGER and OBJECTIVE layers are compared byte for byte on every sanctioned write.
+#
+# CHECKPOINT PROOFS ARE RUN AT WRITE TIME (3.0, spec 5.1). A proof is never on disk
+# unless it passed: the gate runs the command the moment the line is recorded, with the
+# same bounds and the same trivial/destructive/absence classifiers the Stop gate uses,
+# and denies the write with the command's own output when it does not reproduce.
+# Recorded proofs are append-only: an existing Cn PROOF line may not be changed or
+# removed, and C2 may not be recorded before C1 is on disk.
 #
 # Order of decisions:
 #   1. fleet switch off                        -> allow  (F11)
@@ -19,15 +34,17 @@
 #      would otherwise wait on a permission prompt nobody is there to answer)
 #   3. a write to that file (Write, Edit, apply_patch) -> validated, then allowed
 #   4. anything else under the objective home   -> deny
-#   5. Bash naming the objective home           -> deny (whole command string)
-#   6. everything else                          -> allow
+#   5. a write under the session cwd with no C1 proof on disk -> deny (the edit lock)
+#   6. Bash naming the objective home           -> deny (whole command string)
+#   7. everything else                          -> allow
 #
 # FAILURE DIRECTION (audited 2026-09-13): FAILS CLOSED.
 #   jq missing                    -> exit 2 (F13) with the install command
 #   stdin not a JSON object       -> exit 2
 #   no session_id                 -> exit 2
 #   objective file absent         -> exit 0 (installed mid-session; the next message
-#                                    creates it)
+#                                    creates it; no file, no checkpoint, no lock)
+#   a 2.x file with no WORKFLOW   -> treated as C1 current (spec 5.6); never a crash
 #   proposed result unreadable    -> DENY (never judge content the runtime will not write)
 #   SESSION_OBJECTIVE=off         -> exit 0 with one visible line (F11)
 set -uo pipefail
@@ -53,6 +70,26 @@ else
 fi
 
 under_home() { case "$1" in "$HOMEDIR"|"$HOMEDIR"/*) return 0 ;; esac; return 1; }
+RCWD="$(so_realpath "$CWD")"
+under_cwd() { case "$1" in "$RCWD"|"$RCWD"/*) return 0 ;; esac; return 1; }
+
+# ---------------------------------------------------------------------------
+# THE EDIT LOCK (5.2)
+# ---------------------------------------------------------------------------
+# Product source is everything under the session cwd. The scratchpad, /tmp and the
+# objective file itself are outside it and are never locked: the lock exists to stop the
+# agent changing the thing it has not looked at, not to stop it thinking on paper.
+check_edit_lock() { # <tool> <target as written> <resolved target>
+  [ -f "$FILE" ] || return 0
+  [ "$(so_objective_kind "$FILE")" = "conversation" ] && return 0
+  so_workflow_is_conversation "$FILE" && return 0
+  so_has_checkpoint_proof "$FILE" C1 && return 0
+  under_cwd "$3" || return 0
+  so_deny_pretooluse "session-objective: $1 on $2 is denied — no C1 proof is on disk, and nothing under $CWD changes before the first checkpoint is met.
+$(so_checkpoint_text "$FILE" C1)
+$(so_checkpoint_instruction "$FILE" C1)
+The command you record is run right then: if it does not exit the code you wrote, the write is refused and nothing lands. Files outside $CWD are not locked."
+}
 
 # ---------------------------------------------------------------------------
 # The only thing the agent may change: the PROGRESS layer.
@@ -72,15 +109,76 @@ validate_progress() { # <file holding the proposed whole file>
   if [ "$(so_objective_heading "$FILE")$(so_objective_layer "$FILE")" != "$(so_objective_heading "$NEW")$(so_objective_layer "$NEW")" ]; then
     so_deny_pretooluse "session-objective: the OBJECTIVE layer changed. It is not yours: it is written from the operator's own messages by a call that has never seen this session, and an agent editing it is the whole defect 2.0 exists to close. If it is wrong, say so in your reply — his next message rewrites it. Reproduce it byte-for-byte and change only PROGRESS."
   fi
+  if [ "$(so_workflow_heading "$FILE")$(so_workflow_layer "$FILE")" != "$(so_workflow_heading "$NEW")$(so_workflow_layer "$NEW")" ]; then
+    so_deny_pretooluse "session-objective: the WORKFLOW layer changed. The checkpoints are written with the objective by the same call that has never seen this session; an agent that can reword its own exit conditions has no exit conditions. Reproduce it byte-for-byte and change only PROGRESS."
+  fi
 
   local WORDS; WORDS="$(so_progress_layer "$NEW" | wc -w | tr -d ' ')"
   if [ "$WORDS" -gt 300 ]; then
     so_deny_pretooluse "session-objective: PROGRESS is $WORDS words; the cap is 300. CURRENT REALITY is capped at 80 words and FRONTIER is one line. Long content belongs in a plan or spec file that the objective points at."
   fi
-  local CRW; CRW="$(so_prog_section "$NEW" "CURRENT REALITY" | wc -w | tr -d ' ')"
-  if [ "$CRW" -gt 80 ]; then
-    so_deny_pretooluse "session-objective: CURRENT REALITY is $CRW words; the cap is 80. It says what is true now, not what you did."
-  fi
+
+  # -------------------------------------------------------------------------
+  # CHECKPOINTS (5.1): append-only, ordered, and run at the moment of recording
+  # -------------------------------------------------------------------------
+  local cur_cp new_cp line cn
+  cur_cp="$(so_prog_section "$FILE" CHECKPOINTS | so_trim | grep -v '^$' || true)"
+  new_cp="$(so_prog_section "$NEW"  CHECKPOINTS | so_trim | grep -v '^$' || true)"
+
+  # append-only: every proof line already on disk survives this write, byte for byte
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    case "$line" in *PROOF:*) ;; *) continue ;; esac
+    grep -qxF -- "$line" <<< "$new_cp" && continue
+    so_deny_pretooluse "session-objective: this write changes or removes a checkpoint proof that is already on disk: $line — recorded checkpoint proofs are append-only. A checkpoint that can be rewritten after the fact records nothing. Add the next one; leave the ones behind you alone."
+  done <<< "$cur_cp"
+
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    case "$line" in *PROOF:*) ;; *) continue ;; esac
+    cn="$(sed -nE 's/^[[:space:]]*(C[0-9]+)[[:space:]]+PROOF:.*/\1/p' <<< "$line")"
+    [ -n "$cn" ] || so_deny_pretooluse "session-objective: a line under CHECKPOINTS carries a PROOF but names no checkpoint: $line — write it as  C1 PROOF: <command> => exit <code>"
+    case "$cn" in
+      C1|C2) ;;
+      C3) so_deny_pretooluse "session-objective: C3 carries no proof line of its own: it is satisfied when every D-item in DONE WHEN has a PROOFS line that reproduces. Record those under PROOFS, not under CHECKPOINTS." ;;
+      C4) so_deny_pretooluse "session-objective: C4 carries no proof line of its own: it is satisfied from the transcript, by a fresh-context verifier that ran after your last change and answered PASS. There is nothing to write down." ;;
+      *)  so_deny_pretooluse "session-objective: there is no checkpoint $cn. The workflow has exactly four: C1 UNDERSTAND, C2 BUILD, C3 PROVE, C4 VERIFY." ;;
+    esac
+    # already on disk, already judged when it was recorded
+    grep -qxF -- "$line" <<< "$cur_cp" && continue
+    if [ "$cn" = "C2" ] && ! so_has_checkpoint_proof "$FILE" C1; then
+      so_deny_pretooluse "session-objective: C2 cannot be recorded before C1 is on disk. The order is physical, not advisory: $(so_checkpoint_text "$FILE" C1)"
+    fi
+    if so_is_reply_proof "$line"; then
+      so_deny_pretooluse "session-objective: a checkpoint proof is a command, never a phrase: $line — C1 and C2 are conditions about the world, and the hook runs them. The reply form belongs to a D-item whose outcome IS your reply."
+    fi
+    case "$line" in *'=> exit '*|*'=>exit '*) ;; *)
+      so_deny_pretooluse "session-objective: this checkpoint proof does not end with '=> exit <code>', so there is nothing to reproduce: $line" ;;
+    esac
+    local pcmd pexp rc outf out
+    pcmd="$(printf '%s' "$line" | sed -E 's/.*PROOF:[[:space:]]*//; s/[[:space:]]*=>[[:space:]]*exit[[:space:]]*[0-9]+[[:space:]]*$//')"
+    pexp="$(printf '%s' "$line" | sed -nE 's/.*=>[[:space:]]*exit[[:space:]]*([0-9]+)[[:space:]]*$/\1/p')"
+    if so_proof_trivial "$pcmd"; then
+      so_deny_pretooluse "session-objective: this checkpoint proof cannot fail, so it proves nothing: $line — give it a command whose exit code depends on what you actually observed or built."
+    fi
+    if so_proof_destructive "$pcmd"; then
+      so_deny_pretooluse "session-objective: this checkpoint proof is destructive and the hook will not run it: $line — a checkpoint is re-run, so it has to be read-only."
+    fi
+    if so_proof_absence_is_unwitnessed "$pcmd" "$(so_absence_witness "$NEW" "$line")"; then
+      so_deny_pretooluse "session-objective: this checkpoint proof rests on the ABSENCE of a path that neither the WORKFLOW nor an earlier proof names: $line — never creating a file is not an observation."
+    fi
+    outf="$(mktemp "${TMPDIR:-/tmp}/so-proofout.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
+    so_run_bounded_capture 60 "$pcmd" "$CWD" "$outf"
+    rc=$?
+    out="$(head -c 600 "$outf" 2>/dev/null)"; rm -f "$outf"
+    if [ "$rc" = "124" ] || [ "$rc" = "137" ]; then
+      so_deny_pretooluse "session-objective: this checkpoint proof did not finish within 60 seconds, so it was not recorded: $line"
+    fi
+    if [ "$rc" != "$pexp" ]; then
+      so_deny_pretooluse "session-objective: this checkpoint proof does not reproduce, so it is not recorded and nothing was written: $line — run in $CWD it exited $rc, not $pexp. Its output was:
+${out:-(no output)}"
+    fi
+  done <<< "$new_cp"
 
   # Every proof line is judged the moment it is recorded, not only when it is consumed.
   while IFS= read -r cond; do
@@ -97,8 +195,8 @@ validate_progress() { # <file holding the proposed whole file>
     if so_proof_trivial "$pcmd"; then
       so_deny_pretooluse "session-objective: this proof cannot fail, so it proves nothing: $cond — give it a command whose exit code depends on the outcome, or, if the outcome IS your reply, write  PROOF: reply contains \"<a phrase of at least $SO_REPLY_PHRASE_MIN characters>\""
     fi
-    if so_proof_absence_is_unwitnessed "$pcmd" "$NEW"; then
-      so_deny_pretooluse "session-objective: this proof rests on the ABSENCE of a file that nothing in PROGRESS says ever existed: $cond — never creating the file is not evidence. If the absence is real work, name the path in CURRENT REALITY. If the outcome IS your reply, write  PROOF: reply contains \"<phrase>\"."
+    if so_proof_absence_is_unwitnessed "$pcmd" "$(so_absence_witness "$NEW" "$cond")"; then
+      so_deny_pretooluse "session-objective: this proof rests on the ABSENCE of a path that neither the WORKFLOW nor an earlier proof names: $cond — never creating the file is not evidence. If the absence is real work, the path belongs in a checkpoint proof you already recorded. If the outcome IS your reply, write  PROOF: reply contains \"<phrase>\"."
     fi
   done <<< "$(so_prog_entries "$NEW" PROOFS)"
   return 0
@@ -122,7 +220,10 @@ case "$TOOL" in
     TGT="$(jq -r '.tool_input.file_path // empty' <<< "$SO_PAYLOAD")"
     [ -n "$TGT" ] || exit 0
     RTGT="$(so_realpath "$TGT" "$CWD")"
-    under_home "$RTGT" || exit 0
+    if ! under_home "$RTGT"; then
+      check_edit_lock "$TOOL" "$TGT" "$RTGT"
+      exit 0
+    fi
     if [ "$RTGT" != "$RFILE" ]; then
       so_deny_pretooluse "session-objective: $TOOL on $TGT is denied. The objective home ($(so_home)) is hook-written except for this session's own PROGRESS layer, at $FILE."
     fi
@@ -153,8 +254,12 @@ case "$TOOL" in
     ;;
   MultiEdit|NotebookEdit)
     TGT="$(jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' <<< "$SO_PAYLOAD")"
-    if [ -n "$TGT" ] && under_home "$(so_realpath "$TGT" "$CWD")"; then
-      so_deny_pretooluse "session-objective: $TOOL on $TGT is denied — a multi-part edit cannot be applied to a copy and checked as one result. Use $HOWTO."
+    if [ -n "$TGT" ]; then
+      RTGT="$(so_realpath "$TGT" "$CWD")"
+      if under_home "$RTGT"; then
+        so_deny_pretooluse "session-objective: $TOOL on $TGT is denied — a multi-part edit cannot be applied to a copy and checked as one result. Use $HOWTO."
+      fi
+      check_edit_lock "$TOOL" "$TGT" "$RTGT"
     fi
     ;;
   apply_patch)
@@ -188,6 +293,13 @@ case "$TOOL" in
       validate_progress "$NEW"
       so_allow_pretooluse "session-objective: this patch changes only this session's PROGRESS layer, and the file it would leave on disk passed every check."
     fi
+    # The lock is judged only after the objective-home rules have had their say: a patch
+    # that reaches into the home is refused for THAT, and a reason naming the wrong rule
+    # sends the agent to fix the wrong thing.
+    while IFS= read -r t; do
+      [ -n "$t" ] || continue
+      check_edit_lock "apply_patch" "$t" "$(so_realpath "$t" "$CWD")"
+    done <<< "$(so_patch_targets "$PATCHTEXT")"
     ;;
   Bash)
     CMD="$(jq -r '.tool_input.command // empty' <<< "$SO_PAYLOAD")"

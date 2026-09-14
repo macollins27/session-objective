@@ -37,17 +37,22 @@ if [ "$SOURCE" = "clear" ]; then
   exit 0
 fi
 
+CPNOW="$(so_current_checkpoint "$FILE")"
 cat <<EOF
 ═══ SESSION OBJECTIVE (restored on ${SOURCE:-startup}; file: $FILE) ═══
 ledger: $(so_ledger_count "$FILE") entries, last at $(so_ledger_last_ts "$FILE")
 
 $(so_objective_heading "$FILE")
 $(so_objective_layer "$FILE")
+$(so_workflow_heading "$FILE")
+$(so_workflow_layer "$FILE")
 $(so_progress_heading "$FILE")
 $(so_progress_layer "$FILE")
 ═══════════════════════════════════════
-The OBJECTIVE above is written from the operator's own messages by a call that has never
-seen this session; you may not edit a byte of it or of the ledger. PROGRESS is yours,
-via $(so_write_instruction "$FILE") or an Edit on that same path.
+CURRENT CHECKPOINT: $(so_checkpoint_text "$FILE" "$CPNOW")
+The OBJECTIVE and the WORKFLOW above are written from the operator's own messages by a
+call that has never seen this session; you may not edit a byte of them or of the ledger.
+PROGRESS is yours, via $(so_write_instruction "$FILE") or an Edit on that same path.
+NOW — $(so_checkpoint_instruction "$FILE" "$CPNOW")
 EOF
 exit 0

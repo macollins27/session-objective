@@ -3,11 +3,16 @@
 # objective-ledger-append.sh — UserPromptSubmit hook. The only writer of the LEDGER,
 # and the only caller of the interpreter.
 #
-# Order: a harness notification is turned away; a genuine operator message is appended
-# verbatim; the interpreter then rewrites the OBJECTIVE from the whole ledger; the
-# OBJECTIVE and PROGRESS layers are injected. There is no write-before-act lock in 2.0
-# and nothing to force: interpretation has already happened before the agent sees the
-# message.
+# Order: a harness notification is turned away; a 2.x file is migrated to the 3.0 layout
+# (its CURRENT REALITY and FRONTIER archived beside it, its D-item proofs kept); a
+# genuine operator message is appended verbatim; the interpreter then rewrites the
+# OBJECTIVE and the WORKFLOW from the whole ledger; and the injection carries the
+# OBJECTIVE, the WORKFLOW, the PROGRESS layer, the one derived CURRENT CHECKPOINT line
+# and the instruction for recording exactly that checkpoint.
+#
+# What it no longer carries: any request to keep a running narrative current. 3.0 asks
+# for a write when a checkpoint is reached, when work is launched in the background, and
+# when the status changes — never every turn.
 #
 # FAILURE DIRECTION (audited 2026-09-13): FAILS CLOSED on recording, OPEN on
 # interpretation.
@@ -32,6 +37,7 @@ if so_disabled; then exit 0; fi
 so_read_payload
 
 PROMPT="$(jq -r '.prompt // empty' <<< "$SO_PAYLOAD")"
+CWDNOTE="$(so_field cwd)"; [ -n "$CWDNOTE" ] || CWDNOTE="the session directory"
 FILE="$(so_file)"
 DIR="$(dirname "$FILE")"
 mkdir -p "$DIR" 2>/dev/null || so_fatal "cannot create $DIR; the operator ledger could not be written. Failing CLOSED."
@@ -67,18 +73,46 @@ fi
 if grep -q '^# OBJECTIVE (agent-written' "$FILE" 2>/dev/null; then
   ARCH="$DIR/objective.v1.$(date -u +%Y%m%dT%H%M%SZ).md"
   OLD_STATUS="$(awk '/^STATUS[[:space:]]*$/ { getline; print; exit }' "$FILE" 2>/dev/null || true)"
-  OLD_FRONTIER="$(awk '/^FRONTIER[[:space:]]*$/ { getline; print; exit }' "$FILE" 2>/dev/null || true)"
   MIG="$(mktemp "${TMPDIR:-/tmp}/so-mig.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
   awk 'f { print } /^# OBJECTIVE \(/ { f = 1 }' "$FILE" > "$ARCH" 2>/dev/null || true
   {
     so_ledger_layer "$FILE"
     printf '# OBJECTIVE (interpreter-written from the ledger only; revision 0, bound to ledger entry 0; model none)\n\n'
     printf '%s\n' "$SO_PROGRESS_HEAD"
-    printf 'PROOFS\n\nCURRENT REALITY\nCarried over from the version 1 objective, archived at %s\n\nFRONTIER\n%s\n\nIN FLIGHT\nnone\n\nSTATUS\n%s\n' \
-      "$ARCH" "${OLD_FRONTIER:-(none recorded)}" "${OLD_STATUS:-ACTIVE}"
+    printf 'CHECKPOINTS\n\nPROOFS\n\nIN FLIGHT\nnone\n\nSTATUS\n%s\n' "${OLD_STATUS:-ACTIVE}"
   } > "$MIG" && cat "$MIG" > "$FILE"
   rm -f "$MIG"
   printf 'session-objective: this session had a version 1 objective, written by the in-session agent. It is archived at %s and the OBJECTIVE below is being rewritten from the operator ledger alone.\n' "$ARCH"
+fi
+
+# --- migration from a 2.x file (5.6) ---------------------------------------
+# A 2.x file has no WORKFLOW and a PROGRESS layer built around CURRENT REALITY and
+# FRONTIER, which 3.0 removed. Nothing the agent proved is thrown away: every Dn PROOF
+# line, IN FLIGHT and STATUS are carried across, the narrative sections are archived
+# beside the file, and the interpreter below writes the WORKFLOW from the ledger.
+MIGRATE_NOTE=""
+if [ -n "$(so_progress_heading "$FILE")" ] && [ -z "$(so_workflow_heading "$FILE")" ]; then
+  OLDPROG="$(so_progress_layer "$FILE")"
+  if grep -qE '^(CURRENT REALITY|FRONTIER)[[:space:]]*$' <<< "$OLDPROG" \
+     || ! grep -qE '^CHECKPOINTS[[:space:]]*$' <<< "$OLDPROG"; then
+    SO_PROG_SECTIONS_2X='PROOFS|CURRENT REALITY|FRONTIER|IN FLIGHT|STATUS'
+    ARCH2="$DIR/progress-2x.$(date -u +%Y%m%dT%H%M%SZ).md"
+    printf '%s\n' "$OLDPROG" > "$ARCH2" 2>/dev/null || so_fatal "cannot archive the 2.x progress layer to $ARCH2. Failing CLOSED."
+    KEEP_PROOFS="$(so_section_of "$OLDPROG" "$SO_PROG_SECTIONS_2X" PROOFS | grep -E 'PROOF:' || true)"
+    KEEP_FLIGHT="$(so_section_of "$OLDPROG" "$SO_PROG_SECTIONS_2X" 'IN FLIGHT' | so_trim | grep -v '^$' || true)"
+    KEEP_STATUS="$(so_section_of "$OLDPROG" "$SO_PROG_SECTIONS_2X" STATUS | so_trim | grep -v '^$' | head -1 || true)"
+    MIG2="$(mktemp "${TMPDIR:-/tmp}/so-mig3.XXXXXX")" || so_fatal "mktemp failed. Failing CLOSED."
+    {
+      so_ledger_layer "$FILE"
+      so_objective_heading "$FILE"
+      so_objective_layer "$FILE"
+      printf '%s\n' "$SO_PROGRESS_HEAD"
+      printf 'CHECKPOINTS\n\nPROOFS\n%s\n\nIN FLIGHT\n%s\n\nSTATUS\n%s\n' \
+        "$KEEP_PROOFS" "${KEEP_FLIGHT:-none}" "${KEEP_STATUS:-ACTIVE}"
+    } > "$MIG2" && cat "$MIG2" > "$FILE"
+    rm -f "$MIG2"
+    MIGRATE_NOTE="session-objective: this session's file was written by version 2. Its CURRENT REALITY and FRONTIER text is archived at $ARCH2; every D-item proof, IN FLIGHT and STATUS were kept. The WORKFLOW below is being written from the operator ledger now, and until a C1 proof is recorded no file under the session directory may be written."
+  fi
 fi
 
 # --- append the message verbatim -------------------------------------------
@@ -109,20 +143,25 @@ fi
 # line says how much of it there is. That is what keeps this far under the 8,000
 # characters at which Claude Code stops injecting and writes the payload to a file
 # instead — measured in 1.x at 10.8 KB, on the one turn the objective was needed most.
+CPNOW="$(so_current_checkpoint "$FILE")"
 cat <<EOF
 ═══ SESSION OBJECTIVE (file: $FILE) ═══
 ledger: $COUNT entries, last at $(so_ledger_last_ts "$FILE")
 
 $(so_objective_heading "$FILE")
 $(so_objective_layer "$FILE")
+$(so_workflow_heading "$FILE")
+$(so_workflow_layer "$FILE")
 $(so_progress_heading "$FILE")
 $(so_progress_layer "$FILE")
 ═══════════════════════════════════════
+CURRENT CHECKPOINT: $(so_checkpoint_text "$FILE" "$CPNOW")
+${MIGRATE_NOTE}
 ${INTERP_NOTE}
-The OBJECTIVE above is not yours. It is written from the operator's own messages by a
-call that has never seen this session, and you may not edit a byte of it or of the
-ledger. If it is wrong, that is a fact about what he asked for: say so and let him
-correct it — his next message rewrites it.
+The OBJECTIVE and the WORKFLOW above are not yours. They are written from the operator's
+own messages by a call that has never seen this session, and you may not edit a byte of
+them or of the ledger. If they are wrong, that is a fact about what he asked for: say so
+and let him correct it — his next message rewrites them.
 
 EOF
 # Is he asking for a thing, or for your thoughts? The instruction differs, because on a
@@ -141,20 +180,25 @@ becomes that task's requirements.
 CONV
 else
   cat <<EOF
-PROGRESS is yours. Keep it current with $(so_write_instruction "$FILE") or an Edit on
-that same path:
-  PROOFS           one line per D-item from DONE WHEN, in one of two forms:
-                     D1 PROOF: <command> => exit <code>     the Stop hook re-runs it
-                     D1 PROOF: reply contains "<phrase>"    it checks your final message
-                   Use the reply form when the outcome IS your reply. Never create a
-                   marker file to prove advice; a file whose only purpose is to be
-                   absent proves nothing and is refused.
-  CURRENT REALITY  at most 80 words. What is true now, not what you did.
-  FRONTIER         one line: the next concrete action.
-  IN FLIGHT        background task ids, or none.
-  STATUS           ACTIVE | WAITING: <what is in flight> | NEEDS-DECISION: <one plain
-                   question> | COMPLETE. COMPLETE is accepted only when every D-item's
-                   proof reproduces and the objective is bound to entry $COUNT.
+PROGRESS is yours, via $(so_write_instruction "$FILE") or an Edit on that same path.
+Write it when you reach a checkpoint, when you launch something in the background, and
+when the status changes — not every turn.
+  CHECKPOINTS  C1 PROOF: <command> => exit <code>, then C2 the same way. The hook RUNS
+               the command the moment you record it: a proof that does not reproduce is
+               refused and nothing lands. Recorded proofs are append-only, C2 cannot be
+               recorded before C1 is on disk, and until C1 is recorded no Write, Edit or
+               patch under ${CWDNOTE} is permitted.
+  PROOFS       one line per D-item from DONE WHEN, in one of two forms:
+                 D1 PROOF: <command> => exit <code>     the Stop hook re-runs it
+                 D1 PROOF: reply contains "<phrase>"    it checks your final message
+               Use the reply form when the outcome IS your reply. Never create a marker
+               file to prove advice; a file whose only purpose is to be absent is refused.
+  IN FLIGHT    background task ids, or none.
+  STATUS       ACTIVE | WAITING: <what is in flight> | NEEDS-DECISION: <one plain
+               question> | COMPLETE. COMPLETE is accepted only when C1 and C2 reproduce,
+               every D-item's proof reproduces, a fresh-context verifier answered PASS
+               after your last change, and the objective is bound to entry $COUNT.
+NOW — $(so_checkpoint_instruction "$FILE" "$CPNOW")
 Long content belongs in a plan or spec file that the objective points at, not in here.
 EOF
 fi

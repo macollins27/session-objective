@@ -18,4 +18,9 @@ D1 the thing exists
 
 OPEN QUESTION
 none
+# WORKFLOW
+C1 UNDERSTAND — the current state of everything the outcome touches has been observed
+C2 BUILD — the outcome exists as the objective describes it
+C3 PROVE — every DONE WHEN item has a proof that reproduces
+C4 VERIFY — a fresh-context verifier ran after the last change and returned PASS
 EOF
