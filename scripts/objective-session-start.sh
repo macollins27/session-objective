@@ -38,7 +38,7 @@ if [ "$SOURCE" = "clear" ]; then
 fi
 
 CPNOW="$(so_current_checkpoint "$FILE")"
-cat <<EOF
+so_trim_injection 8000 <<EOF
 ═══ SESSION OBJECTIVE (restored on ${SOURCE:-startup}; file: $FILE) ═══
 ledger: $(so_ledger_count "$FILE") entries, last at $(so_ledger_last_ts "$FILE")
 
@@ -55,4 +55,5 @@ call that has never seen this session; you may not edit a byte of them or of the
 PROGRESS is yours, via $(so_write_instruction "$FILE") or an Edit on that same path.
 NOW — $(so_checkpoint_instruction "$FILE" "$CPNOW")
 EOF
+printf '\n'
 exit 0

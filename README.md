@@ -177,6 +177,12 @@ output if it does not reproduce. Recorded proofs are **append-only**: an existin
 may not be changed or removed, and `C2` may not be recorded before `C1` is on disk. `C3` and `C4`
 carry no proof lines of their own; they are satisfied by the D-item re-run and by the transcript.
 
+**The injection.** OBJECTIVE, WORKFLOW, PROGRESS, then one derived line —
+`CURRENT CHECKPOINT: Cn NAME — <exit condition>` — and the instruction for recording exactly that
+checkpoint. Nothing asks the agent to keep anything "current". The block is held under the 8,000
+characters at which Claude Code stops injecting and writes the payload to a file instead; what gets
+dropped first is MUST lines, with a visible marker, and the WORKFLOW is never truncated.
+
 **C4, from the transcript.** After the last `Write`/`Edit`/`MultiEdit`/`NotebookEdit`/`apply_patch`
 whose target lands under cwd, there must be a later `Agent`/`Task`/`Workflow` call, or a shell call
 carrying `claude -p` or `codex exec`, whose result contains the whole word `PASS`. If the transcript

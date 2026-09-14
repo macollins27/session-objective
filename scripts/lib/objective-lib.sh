@@ -746,3 +746,34 @@ so_checkpoint_instruction() { # <file> <Cn>
       printf 'Every checkpoint is satisfied: set STATUS COMPLETE in PROGRESS.' ;;
   esac
 }
+
+# ---------------------------------------------------------------------------
+# The injection size cap (5.5)
+# ---------------------------------------------------------------------------
+# Claude Code stops injecting at roughly 8,000 characters and writes the payload to a
+# file instead — measured in 1.x at 10.8 KB, on the one turn the objective was needed
+# most. The word caps (OBJECTIVE + WORKFLOW 280, PROGRESS 300) make that structurally
+# unreachable, so this is a floor under a malformed or hand-edited file rather than a
+# routine path. What it drops is MUST and MUST NOT lines, with a visible marker saying
+# so; the WORKFLOW is never touched, because the checkpoint the agent is standing on is
+# the one thing the injection exists to deliver.
+so_trim_injection() { # <max-chars>   (reads stdin, writes stdout)
+  local max="$1" body
+  body="$(cat)"
+  if [ "${#body}" -le "$max" ]; then printf '%s' "$body"; return 0; fi
+  body="$(printf '%s\n' "$body" | awk '
+    /^MUST( NOT)?[[:space:]]*$/ { sec = 1; n = 0; print; next }
+    /^(DONE WHEN|OPEN QUESTION|# WORKFLOW|# PROGRESS)/ { sec = 0 }
+    sec && /^[[:space:]]*-[[:space:]]/ {
+      n++
+      if (n <= 3) { print; next }
+      if (n == 4) print "  ... more requirement lines are in the file and were not injected (size cap); read the file to see them"
+      next
+    }
+    { print }')"
+  if [ "${#body}" -gt "$max" ]; then
+    body="$(printf '%s' "$body" | head -c "$((max - 120))")
+... the injection was cut at the size cap; the whole file is on disk and a Read of it is always permitted"
+  fi
+  printf '%s' "$body"
+}

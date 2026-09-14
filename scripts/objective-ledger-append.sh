@@ -144,7 +144,10 @@ fi
 # characters at which Claude Code stops injecting and writes the payload to a file
 # instead — measured in 1.x at 10.8 KB, on the one turn the objective was needed most.
 CPNOW="$(so_current_checkpoint "$FILE")"
-cat <<EOF
+# 8,000 characters is where Claude Code stops injecting and writes the payload to a file
+# instead, so the block is rendered and then held under that, MUST lines first and the
+# WORKFLOW never (so_trim_injection).
+so_trim_injection 8000 <<EOF
 ═══ SESSION OBJECTIVE (file: $FILE) ═══
 ledger: $COUNT entries, last at $(so_ledger_last_ts "$FILE")
 
@@ -164,6 +167,7 @@ them or of the ledger. If they are wrong, that is a fact about what he asked for
 and let him correct it — his next message rewrites them.
 
 EOF
+printf '\n'
 # Is he asking for a thing, or for your thoughts? The instruction differs, because on a
 # conversation the reply IS the deliverable and there is nothing to write down. Emitted
 # here, at the top level: a heredoc nested inside a command substitution inside another
