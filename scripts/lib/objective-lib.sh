@@ -52,6 +52,18 @@ so_read_payload() {
   [ -n "$SO_PAYLOAD" ] || so_fatal "empty stdin; expected a hook JSON payload. Failing CLOSED."
   jq -e 'type == "object"' >/dev/null 2>&1 <<< "$SO_PAYLOAD" \
     || so_fatal "stdin did not parse as a JSON object. Failing CLOSED."
+  # The session_id check lives HERE, in the main shell, and not only in so_key: so_key runs
+  # inside "$(...)" substitutions, where an exit 2 kills the subshell and the guard carries
+  # on with an empty key and exit 0 — the tool then proceeds. Found by the 3.0 fresh
+  # verifier 2026-09-14 with a payload carrying no session_id; every header said exit 2 and
+  # every guard exited 0. Fixtures INV-*-rejects-missing-session-id and
+  # INV-*-rejects-path-session-id keep this closed.
+  local sid_ aid_
+  sid_="$(so_field session_id)"; aid_="$(so_field agent_id)"
+  [ -n "$sid_" ] || so_fatal "payload carries no session_id; cannot resolve an objective file. Failing CLOSED."
+  case "$sid_$aid_" in
+    */*|*..*) so_fatal "session_id/agent_id contains a path separator; refusing to resolve a file from it. Failing CLOSED." ;;
+  esac
 }
 
 so_field() { # <jq-path-without-leading-dot>

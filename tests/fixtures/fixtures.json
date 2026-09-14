@@ -350,6 +350,10 @@
       "expect": "deny",
       "expect_contains": [
         "the cap is 300"
+      ],
+      "expect_absent": [
+        "CURRENT REALITY",
+        "FRONTIER"
       ]
     },
     {
@@ -8911,6 +8915,153 @@
         "C1 UNDERSTAND — the current state of everything the outcome touches has been observed",
         "C4 VERIFY — a fresh-context verifier ran after the last change and returned PASS",
         "CURRENT CHECKPOINT: C1 UNDERSTAND"
+      ]
+    },
+    {
+      "id": "INV-write-gate-rejects-missing-session-id",
+      "script": "objective-write-gate.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@CWD@/x.txt",
+          "old_string": "a",
+          "new_string": "b"
+        },
+        "cwd": "@CWD@"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-write-gate-rejects-path-session-id",
+      "script": "objective-write-gate.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": {
+          "file_path": "@CWD@/x.txt",
+          "old_string": "a",
+          "new_string": "b"
+        },
+        "cwd": "@CWD@",
+        "session_id": "../evil"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-stop-gate-rejects-missing-session-id",
+      "script": "objective-stop-gate.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "Stop",
+        "stop_hook_active": false,
+        "last_assistant_message": "done",
+        "cwd": "@CWD@"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-stop-gate-rejects-path-session-id",
+      "script": "objective-stop-gate.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "Stop",
+        "stop_hook_active": false,
+        "last_assistant_message": "done",
+        "cwd": "@CWD@",
+        "session_id": "../evil"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-ledger-append-rejects-missing-session-id",
+      "script": "objective-ledger-append.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "build it",
+        "cwd": "@CWD@"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-ledger-append-rejects-path-session-id",
+      "script": "objective-ledger-append.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "build it",
+        "cwd": "@CWD@",
+        "session_id": "../evil"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-session-start-rejects-missing-session-id",
+      "script": "objective-session-start.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "SessionStart",
+        "source": "startup",
+        "cwd": "@CWD@"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-session-start-rejects-path-session-id",
+      "script": "objective-session-start.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "SessionStart",
+        "source": "startup",
+        "cwd": "@CWD@",
+        "session_id": "../evil"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-subagent-seed-rejects-missing-session-id",
+      "script": "objective-subagent-seed.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "SubagentStart",
+        "agent_id": "agent-1",
+        "cwd": "@CWD@"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
+      ]
+    },
+    {
+      "id": "INV-subagent-seed-rejects-path-session-id",
+      "script": "objective-subagent-seed.sh",
+      "expect": "fatal",
+      "payload": {
+        "hook_event_name": "SubagentStart",
+        "agent_id": "agent-1",
+        "cwd": "@CWD@",
+        "session_id": "../evil"
+      },
+      "expect_contains": [
+        "Failing CLOSED"
       ]
     }
   ]

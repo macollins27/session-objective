@@ -120,7 +120,7 @@ validate_progress() { # <file holding the proposed whole file>
 
   local WORDS; WORDS="$(so_progress_layer "$NEW" | wc -w | tr -d ' ')"
   if [ "$WORDS" -gt 300 ]; then
-    so_deny_pretooluse "session-objective: PROGRESS is $WORDS words; the cap is 300. CURRENT REALITY is capped at 80 words and FRONTIER is one line. Long content belongs in a plan or spec file that the objective points at."
+    so_deny_pretooluse "session-objective: PROGRESS is $WORDS words; the cap is 300. PROGRESS holds only CHECKPOINTS, PROOFS, IN FLIGHT and STATUS; long content belongs in a plan or spec file that the objective points at."
   fi
 
   # -------------------------------------------------------------------------
