@@ -20,6 +20,11 @@
 # pretends otherwise. The defence against tampering is elsewhere and unchanged: the
 # LEDGER and OBJECTIVE layers are compared byte for byte on every sanctioned write.
 #
+# THE HOOK TIMEOUT IS PART OF THIS GUARD. A PreToolUse hook that is killed on its timeout
+# is a non-blocking error, and the tool then PROCEEDS — the same fail-open shape exit 2
+# exists to close. Running a checkpoint proof takes up to 60 seconds, so hooks.json gives
+# this hook 75. Never lower that below the proof bound.
+#
 # CHECKPOINT PROOFS ARE RUN AT WRITE TIME (3.0, spec 5.1). A proof is never on disk
 # unless it passed: the gate runs the command the moment the line is recorded, with the
 # same bounds and the same trivial/destructive/absence classifiers the Stop gate uses,
